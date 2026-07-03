@@ -75,7 +75,7 @@ jobs:
           gem install fastlane --no-document
           ruby Ebb/ci/verify_app_store_connect_app.rb
 
-      - name: Create TestFlight beta group
+      - name: Create TestFlight internal group and add testers
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
@@ -130,10 +130,3 @@ jobs:
           issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-
-      - name: Distribute build to beta group
-        env:
-          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
-          BUILD_NUMBER: ${{ github.run_number }}
-        run: ruby Ebb/ci/distribute_build.rb
