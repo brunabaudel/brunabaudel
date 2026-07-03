@@ -1,2 +1,5 @@
 app_identifier("com.brunabaudel.BasicApp")
-# team_id is read from DEVELOPMENT_TEAM env var in CI
+
+if ENV["DEVELOPMENT_TEAM"]
+  team_id(ENV["DEVELOPMENT_TEAM"])
+end

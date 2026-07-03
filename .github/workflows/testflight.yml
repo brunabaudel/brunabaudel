@@ -2,20 +2,10 @@ name: TestFlight
 
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "What to run"
-        required: true
-        default: deploy
-        type: choice
-        options:
-          - deploy
-          - setup-app
   push:
     branches:
       - app/ebb
       - main
-      - "cursor/**"
     paths:
       - "BasicApp/**"
       - ".github/workflows/testflight.yml"
@@ -30,8 +20,7 @@ jobs:
     runs-on: macos-15
     if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Build for iOS Simulator
         run: |
@@ -42,39 +31,12 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO
 
-  setup-app:
-    name: Register app with Apple (one-time)
-    runs-on: macos-15
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'setup-app'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-          bundler-cache: true
-          working-directory: BasicApp
-
-      - name: Register bundle ID and App Store Connect app
-        working-directory: BasicApp
-        env:
-          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-        run: bundle exec fastlane setup_app
-
   deploy-testflight:
     name: Deploy to TestFlight
     runs-on: macos-15
-    if: >-
-      github.event_name != 'pull_request' &&
-      (github.event_name != 'workflow_dispatch' || github.event.inputs.mode == 'deploy')
+    if: github.event_name != 'pull_request'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -82,13 +44,25 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
           working-directory: BasicApp
+
+      - name: Write App Store Connect API key
+        env:
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          KEY_FILE="${RUNNER_TEMP}/AuthKey.p8"
+          printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          if ! grep -q "BEGIN PRIVATE KEY" "$KEY_FILE"; then
+            echo "APPSTORE_API_PRIVATE_KEY secret is missing BEGIN PRIVATE KEY header"
+            exit 1
+          fi
+          echo "APPSTORE_API_KEY_PATH=$KEY_FILE" >> "$GITHUB_ENV"
 
       - name: Build and upload to TestFlight
         working-directory: BasicApp
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
-          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
           BUILD_NUMBER: ${{ github.run_number }}
           CI: true

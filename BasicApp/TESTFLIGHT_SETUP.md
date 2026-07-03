@@ -1,77 +1,45 @@
-# TestFlight via GitHub Actions
+# TestFlight setup
 
-Install **BasicApp** on your iPhone using GitHub Actions + TestFlight. After a short one-time setup, you never need a Mac.
+## GitHub secrets
 
-## What you need to do (about 10 minutes)
+| Name | Value |
+|------|-------|
+| `DEVELOPMENT_TEAM` | `3F274MB2RL` |
+| `APPSTORE_API_PRIVATE_KEY` | Full `.p8` file contents (include `BEGIN`/`END` lines) |
 
-I cannot log into your Apple or GitHub accounts, but you only need to do **two things**:
+## GitHub variables
 
-### 1. Create an App Store Connect API key (in your browser)
+| Name | Value |
+|------|-------|
+| `APPSTORE_ISSUER_ID` | `0db26431-c329-43ec-a88a-7726ac48b535` |
+| `APPSTORE_API_KEY_ID` | `L2WA39JRT9` |
 
-1. Open [App Store Connect → Users and Access → Integrations → API](https://appstoreconnect.apple.com/access/integrations/api)
-2. Click **+** to generate a key with **Admin** or **App Manager** access
-3. Download the `.p8` file (only available once)
-4. Copy your **Issuer ID** and **Key ID** from the same page
-5. Copy your **Team ID** from [Apple Developer → Membership](https://developer.apple.com/account#MembershipDetailsCard)
+Add these under **Settings → Secrets and variables → Actions**.
 
-### 2. Configure GitHub (copy/paste once)
+### Pasting the `.p8` key correctly
 
-On any computer with the [GitHub CLI](https://cli.github.com/) installed:
+The private key must be multiple lines. In GitHub Secrets, paste the entire file:
 
-```bash
-cd BasicApp/scripts
-cp setup-secrets.env.example setup-secrets.env
-# Edit setup-secrets.env with your Team ID, Issuer ID, Key ID, and .p8 contents
-
-chmod +x configure-github-secrets.sh
-./configure-github-secrets.sh
+```
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49Aw...
+-----END PRIVATE KEY-----
 ```
 
-That script stores everything in GitHub secrets/variables for you. **No Mac, no certificates, no provisioning profiles to export manually** — Fastlane creates those in CI using your API key.
+Do not wrap it in extra quotes.
 
----
+## Deploy
 
-## Deploy to your iPhone
+1. Go to **Actions → TestFlight → Run workflow**
+2. Wait for the build to finish (~10–15 min)
+3. Open **TestFlight** on your iPhone and install **BasicApp**
 
-1. Merge this branch (or push to `app/ebb` / `main`)
-2. Go to **Actions → TestFlight → Run workflow**
-3. First time only: choose **setup-app** to register the bundle ID and App Store Connect app
-4. Run again with **deploy** to build and upload to TestFlight
-5. Open the **TestFlight** app on your iPhone and install **BasicApp**
-
-> First upload may take 10–30 minutes for Apple to process.
-
----
-
-## GitHub secrets (set automatically by the script)
-
-| Name | Type | Description |
-|------|------|-------------|
-| `DEVELOPMENT_TEAM` | Secret | 10-character Apple Team ID |
-| `APPSTORE_API_PRIVATE_KEY` | Secret | Full `.p8` file contents |
-| `KEYCHAIN_PASSWORD` | Secret | Random string (auto-generated) |
-| `APPSTORE_ISSUER_ID` | Variable | From App Store Connect API page |
-| `APPSTORE_API_KEY_ID` | Variable | Key ID from App Store Connect API |
-
----
+First upload may take an extra 10–30 minutes for Apple to process.
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| `Authentication credentials are missing or invalid` | Re-check Issuer ID, Key ID, and `.p8` contents in `setup-secrets.env` |
-| `No value found for 'DEVELOPMENT_TEAM'` | Run `configure-github-secrets.sh` again |
-| `App not found` in App Store Connect | Run workflow with **setup-app** first |
-| Build not in TestFlight yet | Wait for Apple processing; check App Store Connect → TestFlight |
-
----
-
-## How it works
-
-Fastlane runs on GitHub’s macOS runners and:
-
-1. Creates a distribution certificate and App Store profile (via your API key)
-2. Builds and signs the app
-3. Uploads to TestFlight
-
-Workflow: [`.github/workflows/testflight.yml`](../.github/workflows/testflight.yml)
+| Error | Fix |
+|-------|-----|
+| `invalid curve name` | Re-paste the `.p8` secret with correct newlines |
+| `missing BEGIN PRIVATE KEY` | The secret is empty or truncated |
+| `Authentication failed` | Check Issuer ID and Key ID variables |
