@@ -58,6 +58,14 @@ jobs:
           cd Ebb
           agvtool new-version -all "${{ github.run_number }}"
 
+      - name: Register bundle ID
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+        run: |
+          gem install fastlane --no-document
+          ruby Ebb/ci/register_bundle_id.rb
+
       - name: Verify App Store Connect app exists
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
