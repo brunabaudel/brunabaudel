@@ -3,7 +3,7 @@
 
 require "spaceship"
 
-BUNDLE_ID = "com.brunabaudel.Ebb"
+BUNDLE_ID = "com.bcbs.ebb"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")

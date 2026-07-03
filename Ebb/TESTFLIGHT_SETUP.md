@@ -22,7 +22,7 @@ Your **Admin** API key is correct for uploading builds. Apple simply does not al
 2. Click **+** → **New App**
 3. Platform: **iOS**
 4. Name: **Ebb**
-5. Bundle ID: **com.brunabaudel.Ebb**
+5. Bundle ID: **com.bcbs.ebb**
 6. SKU: **ebb001**
 7. Click **Create**
 
