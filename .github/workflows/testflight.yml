@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-simulator:
     name: Build (Simulator)
-    runs-on: macos-15
+    runs-on: macos-26
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,8 @@ jobs:
 
   deploy-testflight:
     name: Deploy to TestFlight
-    runs-on: macos-15
+    # Apple requires the iOS 26 SDK for App Store uploads; macos-26 defaults to Xcode 26.x
+    runs-on: macos-26
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v4
