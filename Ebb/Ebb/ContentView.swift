@@ -13,7 +13,7 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            Text("A basic SwiftUI app")
+            Text("Welcome to Ebb")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

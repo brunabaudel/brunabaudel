@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct BasicAppApp: App {
+struct EbbApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -3,7 +3,7 @@
 
 require "spaceship"
 
-BUNDLE_ID = "com.brunabaudel.BasicApp"
+BUNDLE_ID = "com.brunabaudel.Ebb"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
@@ -34,7 +34,7 @@ warn <<~MSG
 
     https://appstoreconnect.apple.com/apps
 
-  Click + → New App → iOS → BasicApp → bundle ID #{BUNDLE_ID} → SKU basicapp001
+  Click + → New App → iOS → Ebb → bundle ID #{BUNDLE_ID} → SKU ebb001
 
   Then re-run the TestFlight workflow.
 

@@ -21,16 +21,16 @@ Your **Admin** API key is correct for uploading builds. Apple simply does not al
 1. Open [App Store Connect → Apps](https://appstoreconnect.apple.com/apps)
 2. Click **+** → **New App**
 3. Platform: **iOS**
-4. Name: **BasicApp**
-5. Bundle ID: **com.brunabaudel.BasicApp**
-6. SKU: **basicapp001**
+4. Name: **Ebb**
+5. Bundle ID: **com.brunabaudel.Ebb**
+6. SKU: **ebb001**
 7. Click **Create**
 
 ## Deploy
 
 1. Go to **Actions → TestFlight → Run workflow**
 2. Wait for the build (~10–15 min)
-3. Open **TestFlight** on your iPhone and install **BasicApp**
+3. Open **TestFlight** on your iPhone and install **Ebb**
 
 First upload may take an extra 10–30 minutes for Apple to process.
 

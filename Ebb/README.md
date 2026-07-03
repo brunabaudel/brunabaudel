@@ -1,4 +1,4 @@
-# BasicApp
+# Ebb
 
 A minimal SwiftUI iOS app.
 
@@ -9,7 +9,7 @@ A minimal SwiftUI iOS app.
 
 ## Run locally
 
-1. Open `BasicApp.xcodeproj` in Xcode
+1. Open `Ebb.xcodeproj` in Xcode
 2. Select an iPhone simulator or device
 3. Press **Run** (⌘R)
 
@@ -17,4 +17,4 @@ A minimal SwiftUI iOS app.
 
 1. Add GitHub secrets/variables (see [TESTFLIGHT_SETUP.md](TESTFLIGHT_SETUP.md))
 2. Go to **Actions → TestFlight → Run workflow**
-3. Install **BasicApp** from the TestFlight app on your iPhone
+3. Install **Ebb** from the TestFlight app on your iPhone
