@@ -1,11 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "json"
-require "jwt"
-require "net/http"
-require "openssl"
-require "uri"
+require "spaceship"
 
 BUNDLE_ID = "com.brunabaudel.BasicApp"
 APP_NAME = "BasicApp"
@@ -13,64 +9,29 @@ SKU = "basicapp001"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
-key_content = ENV.fetch("APPSTORE_API_PRIVATE_KEY").gsub("\r\n", "\n").strip
-
-private_key = OpenSSL::PKey.read(key_content)
-token = JWT.encode(
-  {
-    iss: issuer_id,
-    iat: Time.now.to_i,
-    exp: Time.now.to_i + 1200,
-    aud: "appstoreconnect-v1"
-  },
-  private_key,
-  "ES256",
-  header_fields: { kid: key_id, typ: "JWT" }
+key_path = File.expand_path(
+  "~/.appstoreconnect/private_keys/AuthKey_#{key_id}.p8"
 )
 
-def request(method, path, token, body = nil)
-  uri = URI("https://api.appstoreconnect.apple.com#{path}")
-  klass = method == :get ? Net::HTTP::Get : Net::HTTP::Post
-  req = klass.new(uri)
-  req["Authorization"] = "Bearer #{token}"
-  req["Content-Type"] = "application/json"
-  req.body = body.to_json if body
+abort("API key file not found: #{key_path}") unless File.exist?(key_path)
 
-  response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) { |http| http.request(req) }
-  parsed = response.body.empty? ? {} : JSON.parse(response.body)
-  [response.code.to_i, parsed]
-end
+Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+  key_id: key_id,
+  issuer_id: issuer_id,
+  filepath: key_path
+)
 
-code, apps = request(:get, "/v1/apps?filter[bundleId]=#{BUNDLE_ID}", token)
-abort("Auth failed checking apps (#{code}): #{apps}") unless code == 200
-
-if apps["data"]&.any?
+apps = Spaceship::ConnectAPI::App.all(bundle_ids: BUNDLE_ID)
+if apps.any?
   puts "App Store Connect app already exists for #{BUNDLE_ID}"
   exit 0
 end
 
-code, created_app = request(:post, "/v1/apps", token, {
-  data: {
-    type: "apps",
-    attributes: {
-      name: APP_NAME,
-      bundleId: BUNDLE_ID,
-      sku: SKU,
-      primaryLocale: "en-US"
-    }
-  }
-})
+Spaceship::ConnectAPI::App.create(
+  name: APP_NAME,
+  bundle_id: BUNDLE_ID,
+  sku: SKU,
+  primary_locale: "en-US"
+)
 
-if code == 201
-  puts "Created App Store Connect app #{APP_NAME}"
-  exit 0
-end
-
-detail = created_app.dig("errors", 0, "detail").to_s
-if detail.include?("already") || detail.include?("exists")
-  puts "App Store Connect app already exists"
-  exit 0
-end
-
-abort("Failed to create App Store Connect app (#{code}): #{created_app}")
-exit 1
+puts "Created App Store Connect app #{APP_NAME}"
