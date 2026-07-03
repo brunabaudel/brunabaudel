@@ -21,8 +21,8 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
   filepath: key_path
 )
 
-apps = Spaceship::ConnectAPI::App.all(bundle_ids: BUNDLE_ID)
-if apps.any?
+existing = Spaceship::ConnectAPI::App.all(filter: { bundleId: BUNDLE_ID })
+if existing.any?
   puts "App Store Connect app already exists for #{BUNDLE_ID}"
   exit 0
 end
