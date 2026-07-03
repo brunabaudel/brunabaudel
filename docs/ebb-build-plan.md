@@ -6,6 +6,46 @@ Companion docs: `symptom-tracker-product-spec.md` (master), `symptom-tracker-cla
 
 ---
 
+## Architecture ✦ decided
+
+**Lightweight MVVM on `@Observable`, with a protocol-based services layer, organized by feature.** No third-party architecture framework (no TCA, no VIPER) — the app leans on SwiftUI, SwiftData, HealthKit, Foundation Models, and StoreKit, all of which want to live close to Apple's native lifecycle; a solo indie ships faster without fighting an abstraction on top of them.
+
+Three layers:
+
+**1. Services layer (protocol-first) — where the architecture earns its keep.** Each risky capability sits behind a small protocol with a real and a mock implementation:
+
+| Service | Role | Why a protocol |
+|---|---|---|
+| `SymptomClassifier` | transcript → schema-valid field values | the load-bearing seam: Apple Foundation Models and MLX/Qwen are two implementations — the EU-availability decision changes one file, not the app |
+| `SpeechCapture` | on-device speech-to-text stream | mockable for UI tests; API differs across iOS versions |
+| `CycleService` | HealthKit reads + cycle-phase derivation | HealthKit unavailable in previews/simulator |
+| `Entitlements` | StoreKit 2 subscription state | single gate point for every Ebb+ check |
+| `StatsEngine` | pattern/correlation math | pure functions, deterministic, unit-tested — no protocol needed |
+
+The **schema config** (`SchemaConfig` loaded from the bundled JSON) is a value type passed down, not a service — it's data.
+
+**2. ViewModels only where there's orchestration.** `@Observable` classes for screens with real logic: Talk/Confirm (speech → classify → validate → edit → save pipeline), Patterns (stats + phrasing), Onboarding (permission sequencing). Simple screens — Today, Calendar, Settings — use SwiftData `@Query` directly in the view; no pass-through ViewModels.
+
+**3. Views, dumb by design.** The schema-driven `FieldControl` is the model case: it renders whatever the config says and holds no logic. Theme tokens flow through `Environment`.
+
+**Folder layout — by feature, not by layer:**
+
+```
+Ebb/
+  App/            // entry point, root tabs, DI wiring
+  Models/         // SymptomEntry, SchemaConfig (+ symptom-schema.json)
+  DesignSystem/   // Theme tokens, FieldControl, phase ring, cards
+  Services/       // SymptomClassifier, SpeechCapture, CycleService, Entitlements, StatsEngine
+  Features/
+    Today/  Log/  Calendar/  Patterns/  Settings/  Onboarding/  Paywall/  Export/
+```
+
+When the Android port happens, everything that travels (schema, prompt, theme tokens, stats logic) is already isolated from everything that doesn't (views).
+
+**Deliberate non-abstraction:** SwiftData models are the single source of truth and CloudKit sync stays invisible behind them. No repository layer over SwiftData "in case the database changes" — it won't, and the abstraction breaks `@Query`.
+
+---
+
 ## Phase 0 — Foundations (the two platform-neutral IP layers, in code)
 
 Everything else hangs off these. No visible UI yet beyond a debug screen.
