@@ -15,12 +15,22 @@ key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
 key_path = ENV.fetch("APPSTORE_API_KEY_PATH")
 
-private_key = OpenSSL::PKey::EC.new(File.read(key_path))
+unless File.exist?(key_path)
+  warn "API key file not found: #{key_path}"
+  exit 1
+end
+
+private_key = OpenSSL::PKey.read(File.read(key_path))
 token = JWT.encode(
-  { iss: issuer_id, exp: Time.now.to_i + 1200, aud: "appstoreconnect-v1" },
+  {
+    iss: issuer_id,
+    iat: Time.now.to_i,
+    exp: Time.now.to_i + 1200,
+    aud: "appstoreconnect-v1"
+  },
   private_key,
   "ES256",
-  header_fields: { kid: key_id }
+  header_fields: { kid: key_id, typ: "JWT" }
 )
 
 def request(method, path, token, body = nil)
@@ -37,30 +47,11 @@ def request(method, path, token, body = nil)
 end
 
 code, apps = request(:get, "/v1/apps?filter[bundleId]=#{BUNDLE_ID}", token)
-if code == 200 && apps["data"]&.any?
+abort("Auth failed checking apps (#{code}): #{apps}") unless code == 200
+
+if apps["data"]&.any?
   puts "App Store Connect app already exists for #{BUNDLE_ID}"
   exit 0
-end
-
-code, bundle_ids = request(:get, "/v1/bundleIds?filter[identifier]=#{BUNDLE_ID}", token)
-if code != 200 || bundle_ids["data"].nil? || bundle_ids["data"].empty?
-  code, created = request(:post, "/v1/bundleIds", token, {
-    data: {
-      type: "bundleIds",
-      attributes: {
-        identifier: BUNDLE_ID,
-        name: APP_NAME,
-        platform: "IOS"
-      }
-    }
-  })
-
-  unless code == 201
-    puts "Failed to create bundle ID (#{code}): #{created}"
-    exit 1
-  end
-
-  puts "Created bundle ID #{BUNDLE_ID}"
 end
 
 code, created_app = request(:post, "/v1/apps", token, {
@@ -80,10 +71,11 @@ if code == 201
   exit 0
 end
 
-if created_app.dig("errors", 0, "detail")&.include?("already")
+detail = created_app.dig("errors", 0, "detail").to_s
+if detail.include?("already") || detail.include?("exists")
   puts "App Store Connect app already exists"
   exit 0
 end
 
-puts "Failed to create App Store Connect app (#{code}): #{created_app}"
+abort("Failed to create App Store Connect app (#{code}): #{created_app}")
 exit 1
