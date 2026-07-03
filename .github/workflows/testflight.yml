@@ -58,6 +58,15 @@ jobs:
           cd BasicApp
           agvtool new-version -all "${{ github.run_number }}"
 
+      - name: Ensure App Store Connect app exists
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY_PATH: ${{ env.HOME }}/.appstoreconnect/private_keys/AuthKey_${{ vars.APPSTORE_API_KEY_ID }}.p8
+        run: |
+          gem install jwt --no-document
+          ruby BasicApp/ci/create_app_store_connect_app.rb
+
       - name: Build archive
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
