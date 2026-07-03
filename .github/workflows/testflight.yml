@@ -62,8 +62,8 @@ jobs:
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
         run: |
-          export APPSTORE_API_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
           gem install jwt --no-document
           ruby BasicApp/ci/create_app_store_connect_app.rb
 

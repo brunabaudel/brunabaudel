@@ -13,14 +13,9 @@ SKU = "basicapp001"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
-key_path = ENV.fetch("APPSTORE_API_KEY_PATH")
+key_content = ENV.fetch("APPSTORE_API_PRIVATE_KEY").gsub("\r\n", "\n").strip
 
-unless File.exist?(key_path)
-  warn "API key file not found: #{key_path}"
-  exit 1
-end
-
-private_key = OpenSSL::PKey.read(File.read(key_path))
+private_key = OpenSSL::PKey.read(key_content)
 token = JWT.encode(
   {
     iss: issuer_id,
