@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ArchiveVersion</key>
+	<integer>1</integer>
+	<key>Classes</key>
+	<dict/>
+	<key>ObjectVersion</key>
+	<integer>56</integer>
+	<key>Objects</key>
+	<dict/>
+	<key>RootObject</key>
+	<string>A10000090000000000000001</string>
+</dict>
+</plist>
