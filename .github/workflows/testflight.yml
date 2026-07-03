@@ -58,14 +58,13 @@ jobs:
           cd BasicApp
           agvtool new-version -all "${{ github.run_number }}"
 
-      - name: Ensure App Store Connect app exists
-        continue-on-error: true
+      - name: Verify App Store Connect app exists
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
         run: |
           gem install fastlane --no-document
-          ruby BasicApp/ci/create_app_store_connect_app.rb
+          ruby BasicApp/ci/verify_app_store_connect_app.rb
 
       - name: Build archive
         env:

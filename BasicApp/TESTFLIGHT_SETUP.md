@@ -14,15 +14,15 @@
 | `APPSTORE_ISSUER_ID` | `0db26431-c329-43ec-a88a-7726ac48b535` |
 | `APPSTORE_API_KEY_ID` | `L2WA39JRT9` |
 
-## One-time: create the app in App Store Connect
+Your **Admin** API key is correct for uploading builds. Apple simply does not allow creating new app records via the API — that step must be done in the browser once.
 
-Your API key can upload builds but cannot create new apps. Do this once in your browser:
+## One-time: create the app in App Store Connect
 
 1. Open [App Store Connect → Apps](https://appstoreconnect.apple.com/apps)
 2. Click **+** → **New App**
 3. Platform: **iOS**
 4. Name: **BasicApp**
-5. Bundle ID: **com.brunabaudel.BasicApp** (create the identifier first if needed)
+5. Bundle ID: **com.brunabaudel.BasicApp**
 6. SKU: **basicapp001**
 7. Click **Create**
 
@@ -38,6 +38,6 @@ First upload may take an extra 10–30 minutes for Apple to process.
 
 | Error | Fix |
 |-------|-----|
-| `No suitable application records were found` | Create the app in App Store Connect (step above) |
+| `No App Store Connect app found` | Create the app in App Store Connect (step above) |
+| `No suitable application records were found` | Same — the app record must exist before upload |
 | `missing BEGIN PRIVATE KEY` | Re-paste the `.p8` secret with correct newlines |
-| Build fails on signing | Confirm bundle ID `com.brunabaudel.BasicApp` exists in Apple Developer |

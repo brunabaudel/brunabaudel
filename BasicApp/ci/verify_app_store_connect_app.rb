@@ -4,8 +4,6 @@
 require "spaceship"
 
 BUNDLE_ID = "com.brunabaudel.BasicApp"
-APP_NAME = "BasicApp"
-SKU = "basicapp001"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
@@ -21,18 +19,25 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
   filepath: key_path
 )
 
-existing = Spaceship::ConnectAPI::App.all(filter: { bundleId: BUNDLE_ID })
-if existing.any?
-  puts "App Store Connect app already exists for #{BUNDLE_ID}"
+apps = Spaceship::ConnectAPI::App.all(filter: { bundleId: BUNDLE_ID })
+if apps.any?
+  puts "App Store Connect app found for #{BUNDLE_ID}"
   exit 0
 end
 
-Spaceship::ConnectAPI::App.create(
-  name: APP_NAME,
-  bundle_id: BUNDLE_ID,
-  sku: SKU,
-  primary_locale: "en-US",
-  platforms: ["IOS"]
-)
+warn <<~MSG
 
-puts "Created App Store Connect app #{APP_NAME}"
+  No App Store Connect app found for #{BUNDLE_ID}.
+
+  Apple does not allow creating apps via the API — even with an Admin API key.
+  Create the app once in your browser:
+
+    https://appstoreconnect.apple.com/apps
+
+  Click + → New App → iOS → BasicApp → bundle ID #{BUNDLE_ID} → SKU basicapp001
+
+  Then re-run the TestFlight workflow.
+
+MSG
+
+exit 1
