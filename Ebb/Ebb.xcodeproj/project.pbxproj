@@ -3,24 +3,46 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		A10000010000000000000001 /* EbbApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000001 /* EbbApp.swift */; };
-		A10000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000002 /* ContentView.swift */; };
-		A10000010000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000003 /* Assets.xcassets */; };
-/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		A100000C0000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000090000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000050000000000000001;
+			remoteInfo = Ebb;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		A10000020000000000000001 /* EbbApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbbApp.swift; sourceTree = "<group>"; };
-		A10000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A10000020000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000020000000000000004 /* Ebb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ebb.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000020000000000000005 /* EbbTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EbbTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A100000B0000000000000001 /* Ebb */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Ebb;
+			sourceTree = "<group>";
+		};
+		A100000B0000000000000002 /* EbbTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = EbbTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10000030000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000030000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,25 +55,17 @@
 		A10000040000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				A10000040000000000000002 /* Ebb */,
+				A100000B0000000000000001 /* Ebb */,
+				A100000B0000000000000002 /* EbbTests */,
 				A10000040000000000000003 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		A10000040000000000000002 /* Ebb */ = {
-			isa = PBXGroup;
-			children = (
-				A10000020000000000000001 /* EbbApp.swift */,
-				A10000020000000000000002 /* ContentView.swift */,
-				A10000020000000000000003 /* Assets.xcassets */,
-			);
-			path = Ebb;
 			sourceTree = "<group>";
 		};
 		A10000040000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A10000020000000000000004 /* Ebb.app */,
+				A10000020000000000000005 /* EbbTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -71,10 +85,34 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				A100000B0000000000000001 /* Ebb */,
+			);
 			name = Ebb;
 			productName = Ebb;
 			productReference = A10000020000000000000004 /* Ebb.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10000050000000000000002 /* EbbTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000080000000000000003 /* Build configuration list for PBXNativeTarget "EbbTests" */;
+			buildPhases = (
+				A10000060000000000000002 /* Sources */,
+				A10000030000000000000002 /* Frameworks */,
+				A10000070000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A100000D0000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A100000B0000000000000002 /* EbbTests */,
+			);
+			name = EbbTests;
+			productName = EbbTests;
+			productReference = A10000020000000000000005 /* EbbTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -83,16 +121,19 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					A10000050000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
+					A10000050000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A10000050000000000000001;
+					};
 				};
 			};
 			buildConfigurationList = A10000080000000000000002 /* Build configuration list for PBXProject "Ebb" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -100,11 +141,14 @@
 				Base,
 			);
 			mainGroup = A10000040000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000040000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				A10000050000000000000001 /* Ebb */,
+				A10000050000000000000002 /* EbbTests */,
 			);
 		};
 /* End PBXProject section */
@@ -114,7 +158,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000010000000000000003 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000070000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,12 +175,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000010000000000000002 /* ContentView.swift in Sources */,
-				A10000010000000000000001 /* EbbApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000060000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A100000D0000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000050000000000000001 /* Ebb */;
+			targetProxy = A100000C0000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A100000A0000000000000001 /* Debug */ = {
@@ -193,6 +256,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 			};
 			name = Debug;
 		};
@@ -248,6 +312,7 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -314,6 +379,40 @@
 			};
 			name = Release;
 		};
+		A100000A0000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bcbs.ebb.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ebb.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ebb";
+			};
+			name = Debug;
+		};
+		A100000A0000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bcbs.ebb.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Ebb.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Ebb";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -331,6 +430,15 @@
 			buildConfigurations = (
 				A100000A0000000000000001 /* Debug */,
 				A100000A0000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000080000000000000003 /* Build configuration list for PBXNativeTarget "EbbTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000A0000000000000005 /* Debug */,
+				A100000A0000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

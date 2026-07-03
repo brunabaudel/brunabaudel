@@ -2,6 +2,10 @@ name: TestFlight
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "Ebb/**"
+      - ".github/workflows/testflight.yml"
   push:
     branches:
       - app/ebb
@@ -16,19 +20,19 @@ concurrency:
 
 jobs:
   build-simulator:
-    name: Build (Simulator)
+    name: Build & Test (Simulator)
     runs-on: macos-26
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build for iOS Simulator
+      - name: Build and run unit tests on iOS Simulator
         run: |
-          xcodebuild build \
+          xcodebuild test \
             -project Ebb/Ebb.xcodeproj \
             -scheme Ebb \
             -configuration Debug \
-            -destination "generic/platform=iOS Simulator" \
+            -destination "platform=iOS Simulator,name=iPhone 17" \
             CODE_SIGNING_ALLOWED=NO
 
   deploy-testflight:

@@ -1,17 +1,41 @@
 # Ebb
 
-A minimal SwiftUI iOS app.
+A privacy-first, on-device menstrual-migraine and period symptom tracker.
+
+See `../docs/ebb-build-plan.md` for the phased plan and architecture, and
+`../docs/symptom-tracker-classification-spec.md` for the schema that drives
+both the UI and (later) the on-device classifier.
 
 ## Requirements
 
-- Xcode 15+
+- Xcode 16+
 - iOS 17.0+
+
+## Structure
+
+```
+Ebb/
+  App/            entry point, root view, DI wiring
+  Models/         SymptomEntry, SchemaConfig, FieldValue, symptom-schema.json
+  DesignSystem/   Theme tokens (6 palettes), injected via Environment
+  Features/       one folder per feature (Phase 0: Debug)
+EbbTests/         Swift Testing unit tests
+```
 
 ## Run locally
 
 1. Open `Ebb.xcodeproj` in Xcode
 2. Select an iPhone simulator or device
 3. Press **Run** (⌘R)
+
+## Tests
+
+```sh
+xcodebuild test \
+  -project Ebb.xcodeproj \
+  -scheme Ebb \
+  -destination "platform=iOS Simulator,name=iPhone 17"
+```
 
 ## Deploy to your iPhone (TestFlight)
 
