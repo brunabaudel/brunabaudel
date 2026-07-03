@@ -38,11 +38,26 @@ group = app.get_beta_groups.find { |g| g.name == GROUP_NAME }
 if group
   puts "Beta group already exists: #{GROUP_NAME}"
 else
-  group = app.create_beta_group(
-    group_name: GROUP_NAME,
-    is_internal_group: true,
-    has_access_to_all_builds: true
-  )
+  # Spaceship's App#create_beta_group always sends publicLink* attributes,
+  # which Apple rejects for internal groups ("Public link limit cannot be
+  # applied to internal group"). Post the creation request directly instead.
+  body = {
+    data: {
+      type: "betaGroups",
+      attributes: {
+        name: GROUP_NAME,
+        isInternalGroup: true,
+        hasAccessToAllBuilds: true
+      },
+      relationships: {
+        app: { data: { type: "apps", id: app.id } }
+      }
+    }
+  }
+  resp = Spaceship::ConnectAPI.client
+                              .test_flight_request_client
+                              .post("v1/betaGroups", body)
+  group = resp.to_models.first
   puts "Created internal beta group: #{GROUP_NAME}"
 end
 
