@@ -1,0 +1,67 @@
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    setup_ci if ENV["CI"]
+  end
+
+  private_lane :api_key do
+    app_store_connect_api_key(
+      key_id: ENV["APPSTORE_API_KEY_ID"],
+      issuer_id: ENV["APPSTORE_ISSUER_ID"],
+      key_content: ENV["APPSTORE_API_PRIVATE_KEY"],
+      is_key_content_base64: false,
+      in_house: false
+    )
+  end
+
+  desc "Register bundle ID and App Store Connect app (run once)"
+  lane :setup_app do
+    key = api_key
+
+    produce(
+      api_key: key,
+      app_identifier: "com.brunabaudel.BasicApp",
+      app_name: "BasicApp",
+      skip_itc: false,
+      skip_devcenter: false
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    key = api_key
+
+    increment_build_number(
+      xcodeproj: "BasicApp.xcodeproj",
+      build_number: ENV.fetch("BUILD_NUMBER", "1")
+    )
+
+    cert(
+      api_key: key,
+      development: false,
+      force: false
+    )
+
+    sigh(
+      api_key: key,
+      app_identifier: "com.brunabaudel.BasicApp",
+      force: false
+    )
+
+    build_app(
+      project: "BasicApp.xcodeproj",
+      scheme: "BasicApp",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "BasicApp.ipa"
+    )
+
+    upload_to_testflight(
+      api_key: key,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+end
