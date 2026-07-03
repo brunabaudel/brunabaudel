@@ -31,7 +31,8 @@ Spaceship::ConnectAPI::App.create(
   name: APP_NAME,
   bundle_id: BUNDLE_ID,
   sku: SKU,
-  primary_locale: "en-US"
+  primary_locale: "en-US",
+  platforms: ["IOS"]
 )
 
 puts "Created App Store Connect app #{APP_NAME}"
