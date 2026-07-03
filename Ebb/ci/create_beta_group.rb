@@ -71,14 +71,16 @@ TESTERS.each do |tester|
     next
   end
 
-  resp = group.post_bulk_beta_tester_assignments(beta_testers: [tester])
-
-  results = resp.body.dig("data", "attributes", "betaTesters") || []
-  errors = results.flat_map { |t| t["errors"] || [] }
-  if errors.any?
+  # The bulkBetaTesterAssignments endpoint is not available with API key
+  # auth; POST /v1/betaTesters is the official documented endpoint.
+  begin
+    Spaceship::ConnectAPI.post_beta_tester_assignment(
+      beta_group_ids: [group.id],
+      attributes: tester
+    )
+  rescue Spaceship::UnexpectedResponse => e
     abort(
-      "Failed to add #{tester[:email]} to #{GROUP_NAME}: " \
-      "#{errors.map { |e| e['description'] || e.to_s }.join('; ')}\n" \
+      "Failed to add #{tester[:email]} to #{GROUP_NAME}: #{e.message}\n" \
       "Internal group testers must be App Store Connect team members."
     )
   end
