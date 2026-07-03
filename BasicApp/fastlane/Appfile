@@ -1,0 +1,5 @@
+app_identifier("com.brunabaudel.BasicApp")
+
+if ENV["DEVELOPMENT_TEAM"]
+  team_id(ENV["DEVELOPMENT_TEAM"])
+end

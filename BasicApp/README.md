@@ -7,25 +7,14 @@ A minimal SwiftUI iOS app.
 - Xcode 15+
 - iOS 17.0+
 
-## Getting Started
+## Run locally
 
-1. Open `BasicApp.xcodeproj` in Xcode.
-2. Select an iPhone simulator (or a connected device).
-3. Press **Run** (⌘R).
+1. Open `BasicApp.xcodeproj` in Xcode
+2. Select an iPhone simulator or device
+3. Press **Run** (⌘R)
 
-## What's Included
+## Deploy to your iPhone (TestFlight)
 
-- **BasicAppApp.swift** — App entry point
-- **ContentView.swift** — Main screen with a greeting and tap counter
-- **Assets.xcassets** — App icon and accent color placeholders
-
-## Project Structure
-
-```
-BasicApp/
-├── BasicApp/
-│   ├── BasicAppApp.swift
-│   ├── ContentView.swift
-│   └── Assets.xcassets/
-└── BasicApp.xcodeproj/
-```
+1. Add GitHub secrets/variables (see [TESTFLIGHT_SETUP.md](TESTFLIGHT_SETUP.md))
+2. Go to **Actions → TestFlight → Run workflow**
+3. Install **BasicApp** from the TestFlight app on your iPhone

@@ -1,0 +1,69 @@
+name: TestFlight
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - app/ebb
+      - main
+    paths:
+      - "BasicApp/**"
+      - ".github/workflows/testflight.yml"
+
+concurrency:
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-simulator:
+    name: Build (Simulator)
+    runs-on: macos-15
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild build \
+            -project BasicApp/BasicApp.xcodeproj \
+            -scheme BasicApp \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO
+
+  deploy-testflight:
+    name: Deploy to TestFlight
+    runs-on: macos-15
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+          working-directory: BasicApp
+
+      - name: Write App Store Connect API key
+        env:
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          KEY_FILE="${RUNNER_TEMP}/AuthKey.p8"
+          printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          if ! grep -q "BEGIN PRIVATE KEY" "$KEY_FILE"; then
+            echo "APPSTORE_API_PRIVATE_KEY secret is missing BEGIN PRIVATE KEY header"
+            exit 1
+          fi
+          echo "APPSTORE_API_KEY_PATH=$KEY_FILE" >> "$GITHUB_ENV"
+
+      - name: Build and upload to TestFlight
+        working-directory: BasicApp
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          CI: true
+        run: bundle exec fastlane beta
