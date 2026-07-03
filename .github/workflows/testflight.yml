@@ -59,6 +59,7 @@ jobs:
           agvtool new-version -all "${{ github.run_number }}"
 
       - name: Ensure App Store Connect app exists
+        continue-on-error: true
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}

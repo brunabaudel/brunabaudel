@@ -1,14 +1,5 @@
 # TestFlight setup
 
-## One-time: register the app with Apple
-
-Before the first CI run, register the bundle ID in [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list):
-
-- **Bundle ID:** `com.brunabaudel.BasicApp`
-- **Type:** App
-
-Then create the app in [App Store Connect](https://appstoreconnect.apple.com/) → **Apps** → **+** → **New App**, using the same bundle ID.
-
 ## GitHub secrets
 
 | Name | Value |
@@ -23,7 +14,17 @@ Then create the app in [App Store Connect](https://appstoreconnect.apple.com/) �
 | `APPSTORE_ISSUER_ID` | `0db26431-c329-43ec-a88a-7726ac48b535` |
 | `APPSTORE_API_KEY_ID` | `L2WA39JRT9` |
 
-Add these under **Settings → Secrets and variables → Actions**.
+## One-time: create the app in App Store Connect
+
+Your API key can upload builds but cannot create new apps. Do this once in your browser:
+
+1. Open [App Store Connect → Apps](https://appstoreconnect.apple.com/apps)
+2. Click **+** → **New App**
+3. Platform: **iOS**
+4. Name: **BasicApp**
+5. Bundle ID: **com.brunabaudel.BasicApp** (create the identifier first if needed)
+6. SKU: **basicapp001**
+7. Click **Create**
 
 ## Deploy
 
@@ -31,10 +32,12 @@ Add these under **Settings → Secrets and variables → Actions**.
 2. Wait for the build (~10–15 min)
 3. Open **TestFlight** on your iPhone and install **BasicApp**
 
+First upload may take an extra 10–30 minutes for Apple to process.
+
 ## Troubleshooting
 
 | Error | Fix |
 |-------|-----|
-| `invalid curve name` / missing `BEGIN PRIVATE KEY` | Re-paste the `.p8` secret with correct newlines |
-| `No profiles for com.brunabaudel.BasicApp` | Register the bundle ID in Apple Developer portal |
-| `App not found` | Create the app in App Store Connect |
+| `No suitable application records were found` | Create the app in App Store Connect (step above) |
+| `missing BEGIN PRIVATE KEY` | Re-paste the `.p8` secret with correct newlines |
+| Build fails on signing | Confirm bundle ID `com.brunabaudel.BasicApp` exists in Apple Developer |
