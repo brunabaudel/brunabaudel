@@ -3,9 +3,10 @@ default_platform(:ios)
 platform :ios do
   before_all do
     setup_ci if ENV["CI"]
+    connect_api_key
   end
 
-  private_lane :api_key do
+  private_lane :connect_api_key do
     app_store_connect_api_key(
       key_id: ENV["APPSTORE_API_KEY_ID"],
       issuer_id: ENV["APPSTORE_ISSUER_ID"],
@@ -17,11 +18,9 @@ platform :ios do
 
   desc "Build and upload to TestFlight"
   lane :beta do
-    key = api_key
     team_id = ENV.fetch("DEVELOPMENT_TEAM")
 
     produce(
-      api_key: key,
       app_identifier: "com.brunabaudel.BasicApp",
       app_name: "BasicApp",
       team_id: team_id,
@@ -35,13 +34,11 @@ platform :ios do
     )
 
     cert(
-      api_key: key,
       team_id: team_id,
       development: false
     )
 
     sigh(
-      api_key: key,
       team_id: team_id,
       app_identifier: "com.brunabaudel.BasicApp"
     )
@@ -56,7 +53,6 @@ platform :ios do
     )
 
     upload_to_testflight(
-      api_key: key,
       skip_waiting_for_build_processing: true,
       distribute_external: false
     )
