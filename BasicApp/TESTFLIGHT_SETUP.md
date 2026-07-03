@@ -1,5 +1,14 @@
 # TestFlight setup
 
+## One-time: register the app with Apple
+
+Before the first CI run, register the bundle ID in [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list):
+
+- **Bundle ID:** `com.brunabaudel.BasicApp`
+- **Type:** App
+
+Then create the app in [App Store Connect](https://appstoreconnect.apple.com/) → **Apps** → **+** → **New App**, using the same bundle ID.
+
 ## GitHub secrets
 
 | Name | Value |
@@ -16,30 +25,16 @@
 
 Add these under **Settings → Secrets and variables → Actions**.
 
-### Pasting the `.p8` key correctly
-
-The private key must be multiple lines. In GitHub Secrets, paste the entire file:
-
-```
------BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49Aw...
------END PRIVATE KEY-----
-```
-
-Do not wrap it in extra quotes.
-
 ## Deploy
 
 1. Go to **Actions → TestFlight → Run workflow**
-2. Wait for the build to finish (~10–15 min)
+2. Wait for the build (~10–15 min)
 3. Open **TestFlight** on your iPhone and install **BasicApp**
-
-First upload may take an extra 10–30 minutes for Apple to process.
 
 ## Troubleshooting
 
 | Error | Fix |
 |-------|-----|
-| `invalid curve name` | Re-paste the `.p8` secret with correct newlines |
-| `missing BEGIN PRIVATE KEY` | The secret is empty or truncated |
-| `Authentication failed` | Check Issuer ID and Key ID variables |
+| `invalid curve name` / missing `BEGIN PRIVATE KEY` | Re-paste the `.p8` secret with correct newlines |
+| `No profiles for com.brunabaudel.BasicApp` | Register the bundle ID in Apple Developer portal |
+| `App not found` | Create the app in App Store Connect |

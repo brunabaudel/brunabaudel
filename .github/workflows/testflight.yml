@@ -38,32 +38,77 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-          bundler-cache: true
-          working-directory: BasicApp
-
-      - name: Write App Store Connect API key
+      - name: Configure App Store Connect API key
         env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
         run: |
-          KEY_FILE="${RUNNER_TEMP}/AuthKey.p8"
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          KEY_FILE="$KEY_DIR/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          mkdir -p "$KEY_DIR"
           printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
           if ! grep -q "BEGIN PRIVATE KEY" "$KEY_FILE"; then
             echo "APPSTORE_API_PRIVATE_KEY secret is missing BEGIN PRIVATE KEY header"
             exit 1
           fi
-          echo "APPSTORE_API_KEY_PATH=$KEY_FILE" >> "$GITHUB_ENV"
 
-      - name: Build and upload to TestFlight
-        working-directory: BasicApp
+      - name: Set build number
+        run: |
+          cd BasicApp
+          agvtool new-version -all "${{ github.run_number }}"
+
+      - name: Build archive
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          BUILD_NUMBER: ${{ github.run_number }}
-          CI: true
-        run: bundle exec fastlane beta
+        run: |
+          export APP_STORE_CONNECT_API_KEY_KEY_ID="$APPSTORE_API_KEY_ID"
+          export APP_STORE_CONNECT_API_KEY_ISSUER_ID="$APPSTORE_ISSUER_ID"
+          export APP_STORE_CONNECT_API_KEY_KEY_FILEPATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+
+          xcodebuild archive \
+            -project BasicApp/BasicApp.xcodeproj \
+            -scheme BasicApp \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/BasicApp.xcarchive" \
+            -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
+
+      - name: Export IPA
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>${DEVELOPMENT_TEAM}</string>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/BasicApp.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ runner.temp }}/export/BasicApp.ipa
+          issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
