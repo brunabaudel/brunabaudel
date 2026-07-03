@@ -38,6 +38,25 @@ name — CI matches builds by bundle ID only.
 
 First upload may take an extra 10–30 minutes for Apple to process.
 
+## Beta group and invite link
+
+CI manages an external TestFlight group named **Ebb Testers** — no App Store
+Connect access needed:
+
+- `ci/create_beta_group.rb` creates the group (idempotent) with a **public
+  invite link** enabled, capped at 100 testers.
+- `ci/distribute_build.rb` runs after upload: it waits for Apple to finish
+  processing the build, submits it for Beta App Review, and assigns it to the
+  group. The public invite link is printed in the workflow logs.
+
+Share that link with testers — they install the TestFlight app, tap the link,
+and get the build. No emails or ASC accounts required.
+
+The **first** build sent to an external group must pass Beta App Review
+(usually a few hours, occasionally a day). Until it's approved, testers who
+open the link will not see a build. Later builds of the same version are
+available immediately after processing.
+
 ## Troubleshooting
 
 | Error | Fix |
