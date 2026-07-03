@@ -20,14 +20,6 @@ platform :ios do
   lane :beta do
     team_id = ENV.fetch("DEVELOPMENT_TEAM")
 
-    produce(
-      app_identifier: "com.brunabaudel.BasicApp",
-      app_name: "BasicApp",
-      team_id: team_id,
-      skip_itc: false,
-      skip_devcenter: false
-    )
-
     increment_build_number(
       xcodeproj: "BasicApp.xcodeproj",
       build_number: ENV.fetch("BUILD_NUMBER", "1")
