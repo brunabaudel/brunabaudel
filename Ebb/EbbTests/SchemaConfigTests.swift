@@ -11,7 +11,11 @@ struct SchemaLoadingTests {
     @Test func bundledSchemaDecodes() {
         #expect(schema.schemaVersion == "0.1.0")
         #expect(schema.domain == "menstrual-migraine-and-period")
-        #expect(schema.fields.count == 13)
+        #expect(schema.fields.map(\.key) == [
+            "migraine_present", "severity", "location", "quality",
+            "worse_with_movement", "aura", "associated_symptoms", "triggers",
+            "bleeding", "cramps_severity", "relief_taken", "relief_effect",
+        ])
     }
 
     @Test func fieldShapesMatchTheSpec() throws {
