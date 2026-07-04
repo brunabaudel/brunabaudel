@@ -16,11 +16,15 @@ struct EbbApp: App {
     }
 }
 
-/// Phase 0 root: just the debug screen. Replaced by the tab scaffold in Phase 1.
 struct RootView: View {
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     var body: some View {
-        DebugScreen(schemaLoadResult: schemaLoadResult)
+        switch schemaLoadResult {
+        case .success(let schema):
+            MainTabView(schema: schema, schemaLoadResult: schemaLoadResult)
+        case .failure:
+            DebugScreen(schemaLoadResult: schemaLoadResult)
+        }
     }
 }

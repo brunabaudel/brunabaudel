@@ -17,8 +17,8 @@ both the UI and (later) the on-device classifier.
 Ebb/
   App/            entry point, root view, DI wiring
   Models/         SymptomEntry, SchemaConfig, FieldValue, symptom-schema.json
-  DesignSystem/   Theme tokens (6 palettes), injected via Environment
-  Features/       one folder per feature (Phase 0: Debug)
+  DesignSystem/   Theme tokens, FieldControl, phase ring, entry card
+  Features/       Today, Calendar, Patterns, Settings, Log, Debug
 EbbTests/         Swift Testing unit tests
 ```
 
