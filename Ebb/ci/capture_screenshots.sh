@@ -37,7 +37,7 @@ done
 mkdir -p "$SCREENS_DIR"
 
 if [[ "$SKIP_BUILD" != true ]]; then
-  echo "Building Ebb for $SIMULATOR…"
+  echo "Building Ebb for ${SIMULATOR}..."
   xcodebuild build \
     -project Ebb/Ebb.xcodeproj \
     -scheme Ebb \
