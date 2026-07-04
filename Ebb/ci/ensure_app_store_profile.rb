@@ -5,6 +5,8 @@ require "base64"
 require "fileutils"
 require "spaceship"
 
+require_relative "apple_signing_helpers"
+
 BUNDLE_ID = "com.bcbs.ebb"
 PROFILE_NAME = "Ebb App Store CI"
 
@@ -30,9 +32,17 @@ distribution_certs = Spaceship::ConnectAPI::Certificate.all(
   filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
 ).select(&:valid?)
 
-abort("No valid IOS_DISTRIBUTION certificate found in the Apple Developer account") if distribution_certs.empty?
+distribution_cert = AppleSigningHelpers.find_distribution_cert_matching_keychain(
+  distribution_certs
+)
 
-distribution_cert = distribution_certs.max_by { |cert| cert.expiration_date || "" }
+unless distribution_cert
+  abort(
+    "No valid IOS_DISTRIBUTION certificate on the Apple account matches " \
+    "BUILD_CERTIFICATE_BASE64. Re-export the .p12 from Keychain Access and update the secret."
+  )
+end
+
 puts "Using IOS_DISTRIBUTION certificate: #{distribution_cert.display_name || distribution_cert.id}"
 
 profiles = Spaceship::ConnectAPI::Profile.all(

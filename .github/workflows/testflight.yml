@@ -135,6 +135,13 @@ jobs:
           gem install fastlane --no-document
           ruby Ebb/ci/verify_app_store_connect_app.rb
 
+      - name: Install Apple Distribution certificate
+        uses: ./.github/actions/setup-apple-signing
+        with:
+          certificate-base64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          certificate-password: ${{ secrets.P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
       - name: Prune ephemeral Apple certificates
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
@@ -148,13 +155,6 @@ jobs:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
         run: ruby Ebb/ci/create_beta_group.rb
-
-      - name: Install Apple Distribution certificate
-        uses: ./.github/actions/setup-apple-signing
-        with:
-          certificate-base64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          certificate-password: ${{ secrets.P12_PASSWORD }}
-          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
       - name: Ensure App Store provisioning profile
         env:

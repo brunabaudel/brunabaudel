@@ -21,6 +21,7 @@ are NOT used).
 | Beta group + testers | `Ebb/ci/create_beta_group.rb` |
 | Export options | `Ebb/ExportOptions.plist` (`app-store-connect`, manual signing) |
 | Certificate cleanup | `Ebb/ci/prune_ephemeral_certificates.rb` |
+| Keychain/cert matching | `Ebb/ci/apple_signing_helpers.rb` |
 | Provisioning profile | `Ebb/ci/ensure_app_store_profile.rb` |
 | Signing import | `.github/actions/setup-apple-signing` |
 
@@ -38,12 +39,13 @@ Pipeline order (job `deploy-testflight`, `macos-26` runner):
 2. `agvtool new-version -all $GITHUB_RUN_NUMBER` — monotonically increasing
    build numbers with no state in the repo.
 3. Register bundle ID (idempotent), verify the ASC app record exists.
-4. **Prune ephemeral certificates** — revoke API-created development certs and
-   keep one IOS_DISTRIBUTION cert on the Apple account.
-5. Create the internal beta group and add testers (idempotent).
-6. Import the single Apple Distribution `.p12` from `BUILD_CERTIFICATE_BASE64`
+4. Import the single Apple Distribution `.p12` from `BUILD_CERTIFICATE_BASE64`
    into a temporary keychain.
-7. Ensure/download the App Store provisioning profile for `com.bcbs.ebb`.
+5. **Prune ephemeral certificates** — revoke API-created development certs and
+   any extra distribution certs that do not match the imported `.p12`.
+6. Create the internal beta group and add testers (idempotent).
+7. Ensure/download the App Store provisioning profile for `com.bcbs.ebb` using
+   the same distribution certificate as the keychain.
 8. `xcodebuild archive` + `-exportArchive` with `CODE_SIGN_STYLE=Manual` and
    **no** `-allowProvisioningUpdates` — reuses the stored cert every run.
 9. Upload with `apple-actions/upload-testflight-build@v3`.
