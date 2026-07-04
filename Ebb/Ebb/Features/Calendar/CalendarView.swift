@@ -470,7 +470,7 @@ struct CalendarView: View {
     }
 
     private func dayAccessibilityLabel(for day: Date, hasMigraine: Bool) -> String {
-        var parts = [day.formatted(date: .complete)]
+        var parts = [day.formatted(date: .complete, time: .omitted)]
         if let phase = overlay.phase(for: day), let cycleDay = overlay.cycleDay(for: day) {
             parts.append("\(phase.displayName), cycle day \(cycleDay)")
         }
@@ -544,7 +544,7 @@ private extension Calendar {
     }
 
     func endOfDay(for date: Date) -> Date {
-        date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay(for: date))!
+        self.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay(for: date))!
     }
 
     func monthGridDays(containing month: Date) -> [Date] {
