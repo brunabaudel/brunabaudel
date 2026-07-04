@@ -54,7 +54,7 @@ if [[ -z "$APP_PATH" ]]; then
 fi
 echo "Using app bundle: $APP_PATH"
 
-echo "Booting $SIMULATOR…"
+echo "Booting ${SIMULATOR}..."
 xcrun simctl boot "$SIMULATOR" 2>/dev/null || true
 xcrun simctl bootstatus "$SIMULATOR" -b
 
@@ -64,7 +64,7 @@ xcrun simctl install booted "$APP_PATH"
 capture() {
   local name="$1"
   shift
-  echo "Capturing $name…"
+  echo "Capturing ${name}..."
   xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
   xcrun simctl launch booted "$BUNDLE_ID" "$@"
   sleep "$SETTLE_SECONDS"
