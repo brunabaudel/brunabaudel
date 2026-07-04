@@ -27,6 +27,11 @@ struct TodayView: View {
             .sheet(isPresented: $showTapLog) {
                 TapLogView(schema: schema)
             }
+            .onAppear {
+                if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
+                    showTapLog = true
+                }
+            }
         }
     }
 

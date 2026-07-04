@@ -38,6 +38,24 @@ name — CI matches builds by bundle ID only.
 
 First upload may take an extra 10–30 minutes for Apple to process.
 
+## Screenshots on every build
+
+CI captures three simulator screenshots on every PR and every TestFlight deploy:
+
+1. **Today** — home screen with the cycle ring
+2. **Tap log** — full schema form (sheet)
+3. **Calendar** — placeholder screen
+
+**Where to view them:**
+
+1. Open the workflow run on GitHub Actions (e.g. **Actions → TestFlight →** the latest run).
+2. Scroll the job log to **App screenshots** in the job summary — previews are inline.
+3. Or download the **`screenshots`** artifact at the bottom of the run page (`screenshots.zip`).
+
+Artifacts expire after GitHub’s retention period (~90 days). Screenshots are simulator renders, not from a physical device.
+
+Scripts: `ci/capture_screenshots.sh`, `ci/write_screenshot_summary.sh`.
+
 ## Beta group
 
 CI manages an **internal** TestFlight group named **Ebb Internal** — no App

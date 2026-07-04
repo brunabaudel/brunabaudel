@@ -33,7 +33,25 @@ jobs:
             -scheme Ebb \
             -configuration Debug \
             -destination "platform=iOS Simulator,name=iPhone 17" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Capture app screenshots
+        run: |
+          chmod +x Ebb/ci/capture_screenshots.sh Ebb/ci/write_screenshot_summary.sh
+          Ebb/ci/capture_screenshots.sh screenshots --skip-build --derived-data "$RUNNER_TEMP/DerivedData"
+
+      - name: Add screenshots to job summary
+        if: always() && hashFiles('screenshots/*.png') != ''
+        run: Ebb/ci/write_screenshot_summary.sh screenshots
+
+      - name: Upload screenshots
+        if: always() && hashFiles('screenshots/*.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
 
   deploy-testflight:
     name: Deploy to TestFlight
@@ -134,3 +152,20 @@ jobs:
           issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+
+      - name: Capture app screenshots
+        run: |
+          chmod +x Ebb/ci/capture_screenshots.sh Ebb/ci/write_screenshot_summary.sh
+          Ebb/ci/capture_screenshots.sh screenshots
+
+      - name: Add screenshots to job summary
+        if: always() && hashFiles('screenshots/*.png') != ''
+        run: Ebb/ci/write_screenshot_summary.sh screenshots
+
+      - name: Upload screenshots
+        if: always() && hashFiles('screenshots/*.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
