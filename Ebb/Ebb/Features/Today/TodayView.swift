@@ -1,10 +1,14 @@
+import SwiftData
 import SwiftUI
 
 struct TodayView: View {
     let schema: SchemaConfig
 
     @Environment(\.theme) private var theme
+    @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
+
     @State private var showTapLog = false
+    @State private var editingEntry: SymptomEntry?
 
     var body: some View {
         NavigationStack {
@@ -17,7 +21,9 @@ struct TodayView: View {
                         cycleLength: 28,
                         summary: "Placeholder until HealthKit connects in Phase 4."
                     )
+                    daySummarySection
                     logButtons
+                    entriesSection
                 }
                 .padding(20)
             }
@@ -26,6 +32,9 @@ struct TodayView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showTapLog) {
                 TapLogView(schema: schema)
+            }
+            .sheet(item: $editingEntry) { entry in
+                TapLogView(schema: schema, entry: entry)
             }
             .onAppear {
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
@@ -42,6 +51,16 @@ struct TodayView: View {
             Text(Date.now.formatted(date: .complete, time: .omitted))
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
+        }
+    }
+
+    private var daySummarySection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionHeader(title: "Your day")
+            Text(DaySummaryBuilder.todaySummary(entries: entries, schema: schema))
+                .font(.subheadline)
+                .foregroundStyle(theme.text)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -66,6 +85,44 @@ struct TodayView: View {
                 )
             }
         }
+    }
+
+    @ViewBuilder
+    private var entriesSection: some View {
+        if entries.isEmpty {
+            emptyState
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader(title: "Recent")
+                ForEach(recentEntries) { entry in
+                    Button { editingEntry = entry } label: {
+                        EntryCard(entry: entry, schema: schema)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: "Your log")
+            Text("Your log starts here. Tap above to record how you're feeling — no account, everything stays on this device.")
+                .font(.subheadline)
+                .foregroundStyle(theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(theme.line, lineWidth: 1)
+        }
+    }
+
+    private var recentEntries: [SymptomEntry] {
+        Array(entries.prefix(10))
     }
 
     private enum LogButtonStyle { case talk, tap }
@@ -98,7 +155,25 @@ struct TodayView: View {
     }
 }
 
-#Preview {
+#Preview("Empty") {
     TodayView(schema: try! SchemaConfig.load())
+        .modelContainer(for: SymptomEntry.self, inMemory: true)
+        .environment(\.theme, .plumEmber)
+}
+
+#Preview("With entries") {
+    let schema = try! SchemaConfig.load()
+    let container = try! ModelContainer(for: SymptomEntry.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let entry = SymptomEntry(
+        schemaVersion: schema.schemaVersion,
+        fieldValues: [
+            "migraine_present": .boolean(true),
+            "severity": .scale(3),
+            "location": .choices(["right"]),
+        ]
+    )
+    container.mainContext.insert(entry)
+    return TodayView(schema: schema)
+        .modelContainer(container)
         .environment(\.theme, .plumEmber)
 }
