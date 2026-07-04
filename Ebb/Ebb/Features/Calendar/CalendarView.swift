@@ -133,7 +133,7 @@ struct CalendarView: View {
     private var migraineCountInScope: Int {
         switch displayMode {
         case .month:
-            overlay.migraineCount(in: entries, monthContaining: visibleMonth)
+            return overlay.migraineCount(in: entries, monthContaining: visibleMonth)
         case .week:
             let weekEnd = calendar.date(byAdding: .day, value: 6, to: visibleWeekStart)!
             return entries.filter { entry in
