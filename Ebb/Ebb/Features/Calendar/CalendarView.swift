@@ -8,9 +8,9 @@ struct CalendarView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var displayMode: CalendarDisplayMode = .month
-    @State private var visibleMonth = Calendar.current.startOfMonth(for: .now)
-    @State private var visibleWeekStart = Calendar.current.startOfWeek(for: .now)
-    @State private var selectedDay = Calendar.current.startOfDay(for: .now)
+    @State private var visibleMonth = Date.now
+    @State private var visibleWeekStart = Date.now
+    @State private var selectedDay = Date.now
     @State private var editingEntry: SymptomEntry?
 
     private var calendar: Calendar { .ebbCalendar }
@@ -43,9 +43,10 @@ struct CalendarView: View {
                 TapLogView(schema: schema, entry: entry)
             }
             .onAppear {
-                selectedDay = calendar.startOfDay(for: .now)
-                visibleMonth = calendar.startOfMonth(for: .now)
-                visibleWeekStart = calendar.startOfWeek(for: .now)
+                let today = calendar.startOfDay(for: .now)
+                selectedDay = today
+                visibleMonth = calendar.startOfMonth(for: today)
+                visibleWeekStart = calendar.startOfWeek(for: today)
             }
         }
     }
@@ -81,7 +82,7 @@ struct CalendarView: View {
             let year = visibleMonth.formatted(.dateTime.year())
             return "\(month) \(year)"
         case .week:
-            let weekEnd = calendar.date(byAdding: .day, value: 6, to: visibleWeekStart)!
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: visibleWeekStart) ?? visibleWeekStart
             let startDay = visibleWeekStart.formatted(.dateTime.day())
             let endDay = weekEnd.formatted(.dateTime.day())
             let month = visibleWeekStart.formatted(.dateTime.month(.wide))
@@ -135,7 +136,7 @@ struct CalendarView: View {
         case .month:
             return overlay.migraineCount(in: entries, monthContaining: visibleMonth)
         case .week:
-            let weekEnd = calendar.date(byAdding: .day, value: 6, to: visibleWeekStart)!
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: visibleWeekStart) ?? visibleWeekStart
             return entries.filter { entry in
                 entry.fieldValues["migraine_present"] == .boolean(true)
                     && entry.timestamp >= visibleWeekStart
@@ -485,18 +486,26 @@ struct CalendarView: View {
     private func navigateBackward() {
         switch displayMode {
         case .month:
-            visibleMonth = calendar.date(byAdding: .month, value: -1, to: visibleMonth)!
+            if let month = calendar.date(byAdding: .month, value: -1, to: visibleMonth) {
+                visibleMonth = month
+            }
         case .week:
-            visibleWeekStart = calendar.date(byAdding: .day, value: -7, to: visibleWeekStart)!
+            if let week = calendar.date(byAdding: .day, value: -7, to: visibleWeekStart) {
+                visibleWeekStart = week
+            }
         }
     }
 
     private func navigateForward() {
         switch displayMode {
         case .month:
-            visibleMonth = calendar.date(byAdding: .month, value: 1, to: visibleMonth)!
+            if let month = calendar.date(byAdding: .month, value: 1, to: visibleMonth) {
+                visibleMonth = month
+            }
         case .week:
-            visibleWeekStart = calendar.date(byAdding: .day, value: 7, to: visibleWeekStart)!
+            if let week = calendar.date(byAdding: .day, value: 7, to: visibleWeekStart) {
+                visibleWeekStart = week
+            }
         }
     }
 
@@ -535,23 +544,27 @@ private extension Calendar {
     }
 
     func startOfMonth(for date: Date) -> Date {
-        dateComponents([.year, .month], from: date).date!
+        let components = dateComponents([.year, .month], from: date)
+        return self.date(from: components) ?? startOfDay(for: date)
     }
 
     func startOfWeek(for date: Date) -> Date {
         let components = dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
-        return self.date(from: components)!
+        return self.date(from: components) ?? startOfDay(for: date)
     }
 
     func endOfDay(for date: Date) -> Date {
-        self.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay(for: date))!
+        self.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay(for: date))
+            ?? startOfDay(for: date)
     }
 
     func monthGridDays(containing month: Date) -> [Date] {
         let monthStart = startOfMonth(for: month)
         let weekday = component(.weekday, from: monthStart)
         let leading = (weekday - firstWeekday + 7) % 7
-        let gridStart = date(byAdding: .day, value: -leading, to: monthStart)!
+        guard let gridStart = date(byAdding: .day, value: -leading, to: monthStart) else {
+            return [monthStart]
+        }
         return (0..<42).compactMap { date(byAdding: .day, value: $0, to: gridStart) }
     }
 }
