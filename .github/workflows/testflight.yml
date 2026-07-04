@@ -2,6 +2,15 @@ name: TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      capture_screenshots:
+        description: Capture simulator screenshots (Today, Tap log, Calendar)
+        type: boolean
+        default: true
+      deploy_testflight:
+        description: Build, archive, and upload to TestFlight
+        type: boolean
+        default: true
   pull_request:
     paths:
       - "Ebb/**"
@@ -19,6 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # PRs always run tests + screenshots. Manual runs and pushes choose via inputs / defaults.
   build-simulator:
     name: Build & Test (Simulator)
     runs-on: macos-26
@@ -53,11 +63,39 @@ jobs:
           path: screenshots/
           if-no-files-found: error
 
+  capture-screenshots:
+    name: Capture screenshots
+    runs-on: macos-26
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.capture_screenshots)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Capture app screenshots
+        run: |
+          chmod +x Ebb/ci/capture_screenshots.sh Ebb/ci/write_screenshot_summary.sh
+          Ebb/ci/capture_screenshots.sh screenshots
+
+      - name: Add screenshots to job summary
+        if: always() && hashFiles('screenshots/*.png') != ''
+        run: Ebb/ci/write_screenshot_summary.sh screenshots
+
+      - name: Upload screenshots
+        if: always() && hashFiles('screenshots/*.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: error
+
   deploy-testflight:
     name: Deploy to TestFlight
     # Apple requires the iOS 26 SDK for App Store uploads; macos-26 defaults to Xcode 26.x
     runs-on: macos-26
-    if: github.event_name != 'pull_request'
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_testflight)
     steps:
       - uses: actions/checkout@v4
 
@@ -152,20 +190,3 @@ jobs:
           issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-
-      - name: Capture app screenshots
-        run: |
-          chmod +x Ebb/ci/capture_screenshots.sh Ebb/ci/write_screenshot_summary.sh
-          Ebb/ci/capture_screenshots.sh screenshots
-
-      - name: Add screenshots to job summary
-        if: always() && hashFiles('screenshots/*.png') != ''
-        run: Ebb/ci/write_screenshot_summary.sh screenshots
-
-      - name: Upload screenshots
-        if: always() && hashFiles('screenshots/*.png') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: screenshots/
-          if-no-files-found: error

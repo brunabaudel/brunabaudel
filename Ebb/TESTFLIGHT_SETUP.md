@@ -32,19 +32,40 @@ name — CI matches builds by bundle ID only.
 
 ## Deploy
 
-1. Go to **Actions → TestFlight → Run workflow** (or push to `app/ebb` touching `Ebb/**`)
-2. Wait for the build (~10–15 min)
-3. Open **TestFlight** on your iPhone and install **Ebbie**
+### Automatic (push to `app/ebb`)
+
+Every push that touches `Ebb/**` runs **both** jobs in parallel:
+
+- **Capture screenshots** — simulator PNGs + job summary previews
+- **Deploy to TestFlight** — archive, upload, distribute to **Ebb Internal**
+
+PRs run **Build & Test (Simulator)** only (unit tests + screenshots, no TestFlight).
+
+### Manual (pick what runs)
+
+1. Go to **Actions → TestFlight → Run workflow**
+2. Choose branch **`app/ebb`**
+3. Toggle the checkboxes:
+
+| Capture screenshots | Deploy to TestFlight | What runs |
+|---|---|---|
+| on | on | Both (same as a push) |
+| on | off | Screenshots only (~5 min) — no TestFlight upload |
+| off | on | TestFlight only (~3 min) — no screenshots |
+| off | off | Nothing (workflow succeeds with no jobs) |
+
+4. Click **Run workflow**
+
+For TestFlight installs after a deploy: wait ~10–15 min, then open **TestFlight** on your iPhone and install **Ebbie**.
 
 First upload may take an extra 10–30 minutes for Apple to process.
 
-## Screenshots on every build
+## Screenshots
 
-CI captures three simulator screenshots on every PR and every TestFlight deploy:
+CI can capture three simulator screenshots: **Today**, **Tap log**, and **Calendar**.
 
-1. **Today** — home screen with the cycle ring
-2. **Tap log** — full schema form (sheet)
-3. **Calendar** — placeholder screen
+They run automatically on PRs and on pushes to `app/ebb` (in the **Capture screenshots** job).
+On manual runs, toggle **Capture simulator screenshots** in the workflow dispatch form.
 
 **Where to view them:**
 

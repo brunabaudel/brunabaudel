@@ -109,7 +109,10 @@ Spaceship::ConnectAPI.post_beta_tester_assignment(
   automatically (internal group). Add testers by appending to the `TESTERS`
   array in `Ebb/ci/create_beta_group.rb`.
 - The workflow triggers on push to `app/ebb`/`main` touching `Ebb/**` or the
-  workflow file, plus `workflow_dispatch`. A full run takes ~2–3 minutes;
+  workflow file, plus `workflow_dispatch`. Pushes run **Capture screenshots**
+  and **Deploy to TestFlight** in parallel. Manual runs expose two booleans:
+  `capture_screenshots` and `deploy_testflight` (screenshots-only ~5 min,
+  TestFlight-only ~3 min, both ~8 min). PRs run simulator tests + screenshots only.
   Apple's post-upload processing adds 10–30 minutes before the build is
   installable.
 - Debug failures with `gh run list --workflow=testflight.yml` and
