@@ -32,7 +32,17 @@ name — CI matches builds by bundle ID only.
 
 ## Deploy
 
-### Automatic (push to `app/ebb`)
+### Xcode Cloud (Archive → TestFlight)
+
+For a native Apple CI path (no GitHub Actions minutes, managed signing), use the
+**Archive TestFlight** workflow. Repo-side scripts and step-by-step setup are in
+[XCODE_CLOUD_SETUP.md](XCODE_CLOUD_SETUP.md).
+
+Quick summary: in Xcode, create a workflow on scheme **Ebb** that archives on
+push to **`app/ebb`**, prepares for **TestFlight (Internal Testing Only)**, and
+post-distributes to the **Ebb Internal** group.
+
+### Automatic (push to `app/ebb`) — GitHub Actions
 
 Every push that touches `Ebb/**` runs **both** jobs in parallel:
 
