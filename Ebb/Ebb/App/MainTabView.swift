@@ -6,30 +6,30 @@ struct MainTabView: View {
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     @Environment(\.theme) private var theme
-    @State private var selectedTab = Tab.today
+    @State private var selectedTab = AppTab.today
 
     var body: some View {
         TabView(selection: $selectedTab) {
             TodayView(schema: schema)
-                .tag(Tab.today)
+                .tag(AppTab.today)
                 .tabItem {
                     Label("Today", systemImage: "sun.max")
                 }
 
             CalendarView()
-                .tag(Tab.calendar)
+                .tag(AppTab.calendar)
                 .tabItem {
                     Label("Calendar", systemImage: "calendar")
                 }
 
             PatternsView()
-                .tag(Tab.patterns)
+                .tag(AppTab.patterns)
                 .tabItem {
                     Label("Patterns", systemImage: "chart.line.uptrend.xyaxis")
                 }
 
             SettingsView(schemaLoadResult: schemaLoadResult)
-                .tag(Tab.settings)
+                .tag(AppTab.settings)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }
@@ -43,11 +43,11 @@ struct MainTabView: View {
     }
 }
 
-private enum Tab {
-    static let today = 0
-    static let calendar = 1
-    static let patterns = 2
-    static let settings = 3
+private enum AppTab: Int {
+    case today
+    case calendar
+    case patterns
+    case settings
 }
 
 #Preview {
