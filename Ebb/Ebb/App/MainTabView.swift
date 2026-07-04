@@ -16,7 +16,7 @@ struct MainTabView: View {
                     Label("Today", systemImage: "sun.max")
                 }
 
-            CalendarView()
+            CalendarView(schema: schema)
                 .tag(AppTab.calendar)
                 .tabItem {
                     Label("Calendar", systemImage: "calendar")
