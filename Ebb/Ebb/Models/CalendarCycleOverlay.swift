@@ -1,19 +1,19 @@
 import Foundation
 
-/// Cycle decorations for the calendar until Phase 4's HealthKit-backed
-/// `CycleService` exists. Logged bleeding comes from entries; luteal tint
-/// and predicted period windows are derived from the most recent logged
-/// period start and a default 28-day cycle.
+/// Cycle decorations for the calendar. Logged bleeding comes from app entries
+/// and HealthKit menstrual-flow reads; luteal tint and predicted period
+/// windows derive from the most recent period start and user cycle length.
 struct CalendarCycleOverlay: Equatable, Sendable {
     let calendar: Calendar
     let cycleLength: Int
     let periodLength: Int
+    /// Union of app-logged bleeding days and HealthKit flow days.
     let loggedPeriodDays: Set<Date>
-    /// Start of the most recent logged period cluster (start-of-day).
+    /// Start of the most recent period cluster (start-of-day).
     let anchorPeriodStart: Date?
 
     init(
-        calendar: Calendar = .current,
+        calendar: Calendar = .ebbCalendar,
         cycleLength: Int = 28,
         periodLength: Int = 5,
         loggedPeriodDays: Set<Date> = [],
@@ -28,21 +28,23 @@ struct CalendarCycleOverlay: Equatable, Sendable {
 
     static func build(
         from entries: [SymptomEntry],
-        calendar: Calendar = .current,
+        healthKitPeriodDays: Set<Date> = [],
+        calendar: Calendar = .ebbCalendar,
         cycleLength: Int = 28,
         periodLength: Int = 5
     ) -> CalendarCycleOverlay {
-        let loggedDays = Set(
+        let entryDays = Set(
             entries
                 .filter(isLoggedBleeding)
                 .map { calendar.startOfDay(for: $0.timestamp) }
         )
-        let anchor = mostRecentPeriodStart(from: loggedDays, calendar: calendar)
+        let allPeriodDays = entryDays.union(healthKitPeriodDays)
+        let anchor = mostRecentPeriodStart(from: allPeriodDays, calendar: calendar)
         return CalendarCycleOverlay(
             calendar: calendar,
             cycleLength: cycleLength,
             periodLength: periodLength,
-            loggedPeriodDays: loggedDays,
+            loggedPeriodDays: allPeriodDays,
             anchorPeriodStart: anchor
         )
     }

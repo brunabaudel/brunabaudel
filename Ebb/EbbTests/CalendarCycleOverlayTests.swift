@@ -51,6 +51,25 @@ struct CalendarCycleOverlayTests {
         #expect(overlay.anchorPeriodStart == nil)
     }
 
+    @Test func mergesHealthKitFlowDaysWithEntries() {
+        let entries = [entry(on: date(2026, 6, 14), bleeding: "medium")]
+        let healthKitDays: Set<Date> = [
+            date(2026, 6, 1),
+            date(2026, 6, 2),
+            date(2026, 6, 3),
+        ]
+        let overlay = CalendarCycleOverlay.build(
+            from: entries,
+            healthKitPeriodDays: healthKitDays,
+            calendar: calendar
+        )
+
+        #expect(overlay.isLoggedPeriod(date(2026, 6, 1)))
+        #expect(overlay.isLoggedPeriod(date(2026, 6, 14)))
+        #expect(overlay.anchorPeriodStart == date(2026, 6, 14))
+        #expect(overlay.phase(for: date(2026, 6, 28)) == .luteal)
+    }
+
     @Test func derivesLutealAndPredictedPeriodFromAnchor() {
         let entries = [entry(on: date(2026, 6, 1), bleeding: "medium")]
         let overlay = CalendarCycleOverlay.build(from: entries, calendar: calendar)
@@ -89,5 +108,44 @@ struct CalendarCycleOverlayTests {
         let overlay = CalendarCycleOverlay.build(from: entries, calendar: calendar)
         let dayEntries = overlay.entries(on: date(2026, 6, 14), from: entries)
         #expect(dayEntries.map(\.timestamp) == [evening, morning])
+    }
+}
+
+@Suite("Cycle service")
+struct CycleServiceTests {
+    private var calendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        return cal
+    }
+
+    @Test @MainActor func stampsPhaseFromMockHealthKitData() async {
+        let periodStart = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
+        let periodDays = (0..<5).compactMap { calendar.date(byAdding: .day, value: $0, to: periodStart) }
+        let provider = MockCycleDataProvider(periodDays: Set(periodDays))
+        let service = CycleService(
+            preferences: CyclePreferences(),
+            provider: provider,
+            calendar: calendar
+        )
+
+        await service.refresh()
+
+        let target = calendar.date(from: DateComponents(year: 2026, month: 6, day: 15))!
+        let phase = service.phase(for: target, entries: [])
+        #expect(phase == .luteal)
+    }
+
+    @Test @MainActor func extraPeriodDaysIncludedWhenSaving() async {
+        let provider = MockCycleDataProvider()
+        let service = CycleService(provider: provider, calendar: calendar)
+        let day = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
+
+        let phase = service.phase(
+            for: day,
+            entries: [],
+            extraPeriodDays: [calendar.startOfDay(for: day)]
+        )
+        #expect(phase == .menstrual)
     }
 }
