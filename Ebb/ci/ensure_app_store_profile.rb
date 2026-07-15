@@ -25,6 +25,54 @@ def profile_includes_healthkit?(profile)
   Base64.decode64(profile.profile_content).include?("com.apple.developer.healthkit")
 end
 
+def fetch_app_store_profiles
+  Spaceship::ConnectAPI::Profile.all(
+    filter: {
+      profileType: Spaceship::ConnectAPI::Profile::ProfileType::IOS_APP_STORE
+    },
+    includes: "bundleId,certificates"
+  ).select { |profile| profile.bundle_id&.identifier == BUNDLE_ID }
+end
+
+def delete_profile!(profile)
+  puts "Deleting App Store profile: #{profile.name} (#{profile.uuid}, valid=#{profile.valid?})"
+  profile.delete!
+end
+
+def delete_profiles!(profiles)
+  profiles.each { |profile| delete_profile!(profile) }
+end
+
+def find_usable_profile(profiles, distribution_cert)
+  profiles.find do |candidate|
+    candidate.valid? &&
+      candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
+      profile_includes_healthkit?(candidate)
+  end
+end
+
+def create_app_store_profile!(bundle, distribution_cert)
+  attempts = 3
+  attempts.times do |attempt|
+    begin
+      return Spaceship::ConnectAPI::Profile.create(
+        name: PROFILE_NAME,
+        profile_type: Spaceship::ConnectAPI::Profile::ProfileType::IOS_APP_STORE,
+        bundle_id_id: bundle.id,
+        certificate_ids: [distribution_cert.id]
+      )
+    rescue Spaceship::UnexpectedResponse => e
+      raise unless e.message.include?("Multiple profiles found") || e.message.include?("409")
+
+      puts "Profile name conflict — removing duplicates named #{PROFILE_NAME} (attempt #{attempt + 1}/#{attempts})"
+      delete_profiles!(fetch_app_store_profiles.select { |profile| profile.name == PROFILE_NAME })
+      sleep 2
+    end
+  end
+
+  abort("Failed to create App Store profile #{PROFILE_NAME} after #{attempts} attempts")
+end
+
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
 key_path = File.expand_path(
@@ -62,33 +110,23 @@ end
 
 puts "Using IOS_DISTRIBUTION certificate: #{distribution_cert.display_name || distribution_cert.id}"
 
-profiles = Spaceship::ConnectAPI::Profile.all(
-  filter: {
-    profileType: Spaceship::ConnectAPI::Profile::ProfileType::IOS_APP_STORE
-  },
-  includes: "bundleId,certificates"
-).select do |profile|
-  profile.bundle_id&.identifier == BUNDLE_ID && profile.valid?
-end
-
-profile = profiles.find do |candidate|
-  candidate.certificates&.any? { |cert| cert.id == distribution_cert.id }
-end
-
-if profile && !profile_includes_healthkit?(profile)
-  puts "Regenerating App Store profile — existing profile lacks HealthKit entitlement"
-  profile.delete!
-  profile = nil
-end
+all_profiles = fetch_app_store_profiles
+profile = find_usable_profile(all_profiles, distribution_cert)
 
 unless profile
+  stale_profiles = all_profiles.reject do |candidate|
+    candidate.valid? &&
+      candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
+      profile_includes_healthkit?(candidate)
+  end
+
+  if stale_profiles.any?
+    puts "Removing #{stale_profiles.size} stale App Store profile(s) for #{BUNDLE_ID}"
+    delete_profiles!(stale_profiles)
+  end
+
   puts "Creating App Store provisioning profile: #{PROFILE_NAME}"
-  profile = Spaceship::ConnectAPI::Profile.create(
-    name: PROFILE_NAME,
-    profile_type: Spaceship::ConnectAPI::Profile::ProfileType::IOS_APP_STORE,
-    bundle_id_id: bundle.id,
-    certificate_ids: [distribution_cert.id]
-  )
+  profile = create_app_store_profile!(bundle, distribution_cert)
 else
   puts "Reusing App Store provisioning profile: #{profile.name} (#{profile.uuid})"
 end
