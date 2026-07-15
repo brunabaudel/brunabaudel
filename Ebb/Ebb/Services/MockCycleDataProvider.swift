@@ -6,9 +6,11 @@ struct MockCycleDataProvider: CycleDataProvider {
     var status: CycleAuthStatus = .authorized
     var periodDays: Set<Date> = []
 
-    func authorizationStatus() -> CycleAuthStatus { status }
+    func resolveAuthorizationStatus(calendar: Calendar) async -> CycleAuthStatus { status }
 
-    func requestAuthorization() async throws {}
+    func requestAuthorization() async throws {
+        // Previews/tests: no-op
+    }
 
     func fetchMenstrualFlowDays(calendar: Calendar) async throws -> Set<Date> {
         periodDays

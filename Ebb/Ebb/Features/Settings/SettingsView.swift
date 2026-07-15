@@ -4,6 +4,7 @@ struct SettingsView: View {
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     @Environment(\.theme) private var theme
+    @Environment(\.openURL) private var openURL
     @Environment(CycleService.self) private var cycleService
     @State private var showDebug = false
     @State private var isRequestingHealthKit = false
@@ -38,6 +39,9 @@ struct SettingsView: View {
                         }
                 }
             }
+            .task {
+                await cycleService.refresh()
+            }
         }
     }
 
@@ -52,12 +56,13 @@ struct SettingsView: View {
                 Label("Connection", systemImage: "heart.text.square")
             }
 
-            Text("Ebb reads menstrual flow from HealthKit to tag your cycle phase and predict your next period. Nothing is written back to HealthKit.")
+            Text(healthKitExplanation)
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
                 .listRowBackground(theme.surface)
 
-            if cycleService.authorizationStatus == .notDetermined {
+            switch cycleService.authorizationStatus {
+            case .notDetermined:
                 Button {
                     Task { await connectHealthKit() }
                 } label: {
@@ -68,26 +73,52 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(isRequestingHealthKit)
-            } else if cycleService.authorizationStatus == .denied {
-                Text("Open the Health app → Sharing → Apps → Ebb to allow menstrual data.")
-                    .font(.footnote)
-                    .foregroundStyle(theme.muted)
-            } else if cycleService.authorizationStatus == .authorized {
+
+            case .authorized:
                 Button("Refresh cycle data") {
                     Task { await cycleService.refresh() }
                 }
+                if cycleService.healthKitPeriodDays.isEmpty {
+                    Text("No menstrual flow data found yet. In the Health app, open Sharing → Apps → Ebb and turn on Menstrual Cycle.")
+                        .font(.footnote)
+                        .foregroundStyle(theme.muted)
+                }
+                Button("Open Health app") {
+                    openURL(URL(string: "x-apple-health://")!)
+                }
+
+            case .denied:
+                Text("Ebb cannot read menstrual data. Open the Health app → Sharing → Apps → Ebb and allow Menstrual Cycle.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                Button("Open Health app") {
+                    openURL(URL(string: "x-apple-health://")!)
+                }
+                Button("Try again") {
+                    Task { await connectHealthKit() }
+                }
+
+            case .unavailable:
+                Text("HealthKit is not available on this device.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
             }
         } header: {
             Text("HealthKit")
         }
     }
 
+    private var healthKitExplanation: String {
+        "Ebb reads menstrual flow from HealthKit to tag your cycle phase and predict your next period. Nothing is written to HealthKit."
+    }
+
     private var healthKitStatusLabel: String {
         switch cycleService.authorizationStatus {
         case .unavailable: "Unavailable"
         case .notDetermined: "Not connected"
-        case .authorized: "Connected"
-        case .denied: "Access denied"
+        case .authorized:
+            cycleService.healthKitPeriodDays.isEmpty ? "Connected (no data yet)" : "Connected"
+        case .denied: "Needs permission"
         }
     }
 

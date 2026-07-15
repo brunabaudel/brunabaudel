@@ -9,17 +9,21 @@ final class HealthKitCycleDataProvider: CycleDataProvider, @unchecked Sendable {
         HKHealthStore.isHealthDataAvailable()
     }
 
-    func authorizationStatus() -> CycleAuthStatus {
+    func resolveAuthorizationStatus(calendar: Calendar) async -> CycleAuthStatus {
         guard isAvailable else { return .unavailable }
-        switch store.authorizationStatus(for: menstrualFlow) {
-        case .notDetermined:
+
+        let requestStatus = await requestStatus()
+        switch requestStatus {
+        case .shouldRequest:
             return .notDetermined
-        case .sharingDenied:
-            return .denied
-        case .sharingAuthorized:
-            return .authorized
+        case .unnecessary:
+            // Read authorization is intentionally opaque — sharingDenied does not mean
+            // the user refused. After the sheet, assume connected and probe with a query.
+            return await probeReadAccess(calendar: calendar)
+        case .unknown:
+            return .notDetermined
         @unknown default:
-            return .denied
+            return .notDetermined
         }
     }
 
@@ -59,6 +63,29 @@ final class HealthKitCycleDataProvider: CycleDataProvider, @unchecked Sendable {
                 continuation.resume(returning: days)
             }
             store.execute(query)
+        }
+    }
+
+    // MARK: - Private
+
+    private func requestStatus() async -> HKAuthorizationRequestStatus {
+        await withCheckedContinuation { continuation in
+            store.getRequestStatusForAuthorization(toShare: [], read: [menstrualFlow]) { status, _ in
+                continuation.resume(returning: status)
+            }
+        }
+    }
+
+    /// Confirms the app can issue read queries. An empty result still counts as access.
+    private func probeReadAccess(calendar: Calendar) async -> CycleAuthStatus {
+        do {
+            _ = try await fetchMenstrualFlowDays(calendar: calendar)
+            return .authorized
+        } catch let error as HKError where error.code == .errorAuthorizationDenied {
+            return .denied
+        } catch {
+            // Transient HealthKit errors should not strand the user on "access denied".
+            return .authorized
         }
     }
 

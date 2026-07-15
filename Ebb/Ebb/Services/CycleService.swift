@@ -38,11 +38,11 @@ final class CycleService {
         } else {
             self.provider = MockCycleDataProvider(status: .unavailable)
         }
-        authorizationStatus = self.provider.authorizationStatus()
     }
 
     func refresh() async {
-        authorizationStatus = provider.authorizationStatus()
+        authorizationStatus = await provider.resolveAuthorizationStatus(calendar: calendar)
+
         guard authorizationStatus == .authorized else {
             healthKitPeriodDays = []
             lastRefreshed = Date.now
@@ -65,11 +65,10 @@ final class CycleService {
 
         do {
             try await provider.requestAuthorization()
-            authorizationStatus = provider.authorizationStatus()
-            await refresh()
         } catch {
-            authorizationStatus = provider.authorizationStatus()
+            // Still refresh — the user may have partially enabled data in the sheet.
         }
+        await refresh()
     }
 
     func makeOverlay(
@@ -106,7 +105,7 @@ final class CycleService {
         } else if authorizationStatus == .notDetermined {
             summary = "Connect HealthKit in Settings to tag entries with your cycle phase."
         } else if authorizationStatus == .denied {
-            summary = "HealthKit access is off. Set a typical cycle length in Settings, or log bleeding when you tap."
+            summary = "Turn on Menstrual Cycle for Ebb in the Health app, or log bleeding when you tap."
         } else {
             summary = "Log bleeding or connect HealthKit to see your cycle phase."
         }
