@@ -51,17 +51,22 @@ final class SpeechCapture {
         transcript = ""
         isListening = true
 
-        listeningTask = Task {
+        let provider = provider
+        listeningTask = Task.detached { [weak self] in
             do {
                 let stream = await provider.startTranscription()
                 for try await partial in stream {
                     guard !Task.isCancelled else { break }
-                    transcript = partial
+                    await MainActor.run {
+                        self?.transcript = partial
+                    }
                 }
             } catch {
                 guard !Task.isCancelled else { return }
             }
-            isListening = false
+            await MainActor.run {
+                self?.isListening = false
+            }
         }
     }
 

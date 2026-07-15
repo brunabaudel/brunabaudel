@@ -7,13 +7,18 @@ struct SpeechCaptureTests {
     @Test @MainActor func mockRecognizerStreamsTranscript() async throws {
         let capture = SpeechCapture(provider: MockSpeechRecognizer(
             transcript: "dull one on the right",
-            chunkDelayNanoseconds: 10_000_000
+            chunkDelayNanoseconds: 5_000_000
         ))
         capture.startListening()
 
-        try await Task.sleep(for: .milliseconds(500))
-        capture.stopListening()
+        for _ in 0 ..< 100 {
+            if capture.transcript == "dull one on the right" {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
 
+        capture.stopListening()
         #expect(capture.transcript == "dull one on the right")
     }
 
