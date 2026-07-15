@@ -86,7 +86,7 @@ struct TalkView: View {
             )
             .padding(.horizontal, 20)
 
-            if let error = speechCapture.listeningError {
+            if speechCapture.listeningError != nil {
                 Button("Try again") {
                     speechCapture.startListening()
                 }

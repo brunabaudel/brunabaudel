@@ -25,13 +25,31 @@ enum SpeechCaptureError: Error, Equatable {
     }
 }
 
+/// Forwards PCM buffers to the active recognition request on the realtime audio thread.
+private final class AudioBufferSink: @unchecked Sendable {
+    private let lock = NSLock()
+    private weak var request: SFSpeechAudioBufferRecognitionRequest?
+
+    func setRequest(_ request: SFSpeechAudioBufferRecognitionRequest?) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.request = request
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock()
+        defer { lock.unlock() }
+        request?.append(buffer)
+    }
+}
+
 /// On-device `SFSpeechRecognizer` capture — audio never leaves the device.
 actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
     private let audioEngine = AVAudioEngine()
+    private let audioSink = AudioBufferSink()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer: SFSpeechRecognizer?
-    private var isSessionActive = false
 
     init(locale: Locale = .current) {
         speechRecognizer = SFSpeechRecognizer(locale: locale)
@@ -139,35 +157,31 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
 
     private func configureAudioSession() throws {
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .duckOthers])
+        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
     }
 
     private func startAudioCapture() throws {
+        audioEngine.reset()
+
         let inputNode = audioEngine.inputNode
         inputNode.removeTap(onBus: 0)
 
-        let format = recordingFormat(for: inputNode)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            Task { await self?.appendAudio(buffer) }
+        let format = inputNode.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            throw SpeechCaptureError.audioEngineFailure
+        }
+
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [audioSink] buffer, _ in
+            audioSink.append(buffer)
         }
 
         audioEngine.prepare()
-        try audioEngine.start()
-        isSessionActive = true
-    }
-
-    private func recordingFormat(for inputNode: AVAudioInputNode) -> AVAudioFormat {
-        let nodeFormat = inputNode.outputFormat(forBus: 0)
-        if nodeFormat.sampleRate > 0, nodeFormat.channelCount > 0 {
-            return nodeFormat
+        do {
+            try audioEngine.start()
+        } catch {
+            throw SpeechCaptureError.audioEngineFailure
         }
-        return AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: 44_100,
-            channels: 1,
-            interleaved: false
-        ) ?? nodeFormat
     }
 
     private func beginRecognitionRequest() throws {
@@ -181,6 +195,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         request.requiresOnDeviceRecognition = true
         request.addsPunctuation = false
         recognitionRequest = request
+        audioSink.setRequest(request)
     }
 
     private func waitForRecognitionSegment(
@@ -205,8 +220,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
                     }
                 }
                 if let error, !finished {
-                    let nsError = error as NSError
-                    if nsError.domain == "kAFAssistantErrorDomain", nsError.code == 1110 {
+                    if Self.isBenignRecognitionError(error) {
                         finished = true
                         segmentContinuation.resume(returning: "")
                         return
@@ -218,23 +232,35 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         }
     }
 
-    private func appendAudio(_ buffer: AVAudioPCMBuffer) {
-        recognitionRequest?.append(buffer)
-    }
-
     private func tearDownSession() async {
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest?.endAudio()
         recognitionRequest = nil
+        audioSink.setRequest(nil)
 
         if audioEngine.isRunning {
             audioEngine.stop()
         }
         audioEngine.inputNode.removeTap(onBus: 0)
-        isSessionActive = false
 
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private static func isBenignRecognitionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == "kAFAssistantErrorDomain" {
+            switch nsError.code {
+            case 1110, 209, 216, 301:
+                return true
+            default:
+                break
+            }
+        }
+        if nsError.domain == "kLSRErrorDomain", nsError.code == 301 {
+            return true
+        }
+        return false
     }
 
     private static func append(_ segment: String, to existing: String) -> String {

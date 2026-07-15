@@ -54,27 +54,20 @@ final class SpeechCapture {
         isListening = true
 
         let provider = provider
-        listeningTask = Task.detached { [weak self] in
+        listeningTask = Task {
             do {
                 let stream = await provider.startTranscription()
                 for try await partial in stream {
                     guard !Task.isCancelled else { break }
-                    await MainActor.run {
-                        self?.transcript = partial
-                        self?.listeningError = nil
-                    }
+                    applyPartialTranscript(partial)
                 }
             } catch is CancellationError {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    self?.listeningError = Self.userMessage(for: error)
-                }
+                applyListeningError(Self.userMessage(for: error))
             }
-            await MainActor.run {
-                self?.isListening = false
-            }
+            isListening = false
         }
     }
 
@@ -82,12 +75,22 @@ final class SpeechCapture {
         listeningTask?.cancel()
         listeningTask = nil
         isListening = false
+        let provider = provider
         Task { await provider.stopTranscription() }
     }
 
     func resetTranscript() {
         transcript = ""
         listeningError = nil
+    }
+
+    private func applyPartialTranscript(_ partial: String) {
+        transcript = partial
+        listeningError = nil
+    }
+
+    private func applyListeningError(_ message: String) {
+        listeningError = message
     }
 
     private static func userMessage(for error: Error) -> String {
