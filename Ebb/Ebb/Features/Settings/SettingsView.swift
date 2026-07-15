@@ -49,62 +49,77 @@ struct SettingsView: View {
 
     private var healthKitSection: some View {
         Section {
-            LabeledContent {
-                Text(healthKitStatusLabel)
-                    .foregroundStyle(healthKitStatusColor)
-            } label: {
-                Label("Connection", systemImage: "heart.text.square")
-            }
+            healthKitConnectionRow
 
             Text(healthKitExplanation)
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
                 .listRowBackground(theme.surface)
 
-            switch cycleService.authorizationStatus {
-            case .notDetermined:
-                Button {
-                    Task { await connectHealthKit() }
-                } label: {
-                    if isRequestingHealthKit {
-                        ProgressView()
-                    } else {
-                        Text("Connect HealthKit")
-                    }
-                }
-                .disabled(isRequestingHealthKit)
+            healthKitActions
+        } header: {
+            Text("HealthKit")
+        }
+    }
 
-            case .authorized:
-                Button("Refresh cycle data") {
-                    Task { await cycleService.refresh() }
-                }
-                if cycleService.healthKitPeriodDays.isEmpty {
-                    Text("No menstrual flow data found yet. In the Health app, open Sharing → Apps → Ebb and turn on Menstrual Cycle.")
-                        .font(.footnote)
-                        .foregroundStyle(theme.muted)
-                }
-                Button("Open Health app") {
-                    openURL(URL(string: "x-apple-health://")!)
-                }
+    @ViewBuilder
+    private var healthKitConnectionRow: some View {
+        switch cycleService.authorizationStatus {
+        case .authorized, .unavailable:
+            healthKitConnectionLabel
 
-            case .denied:
-                Text("Ebb cannot read menstrual data. Open the Health app → Sharing → Apps → Ebb and allow Menstrual Cycle.")
-                    .font(.footnote)
-                    .foregroundStyle(theme.muted)
-                Button("Open Health app") {
-                    openURL(URL(string: "x-apple-health://")!)
-                }
-                Button("Try again") {
-                    Task { await connectHealthKit() }
-                }
+        case .notDetermined, .denied:
+            Button {
+                Task { await connectHealthKit() }
+            } label: {
+                healthKitConnectionLabel
+            }
+            .disabled(isRequestingHealthKit)
+        }
+    }
 
-            case .unavailable:
-                Text("HealthKit is not available on this device.")
+    private var healthKitConnectionLabel: some View {
+        LabeledContent {
+            Text(healthKitStatusLabel)
+                .foregroundStyle(healthKitStatusColor)
+        } label: {
+            Label("Connection", systemImage: "heart.text.square")
+        }
+    }
+
+    @ViewBuilder
+    private var healthKitActions: some View {
+        switch cycleService.authorizationStatus {
+        case .notDetermined:
+            if isRequestingHealthKit {
+                ProgressView()
+            }
+
+        case .authorized:
+            Button("Refresh cycle data") {
+                Task { await cycleService.refresh() }
+            }
+            if cycleService.healthKitPeriodDays.isEmpty {
+                Text("No menstrual flow data found yet. In the Health app, open Sharing → Apps → Ebb and turn on Menstrual Cycle.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
             }
-        } header: {
-            Text("HealthKit")
+            Button("Open Health app") {
+                openURL(URL(string: "x-apple-health://")!)
+            }
+
+        case .denied:
+            Text("Ebb cannot read menstrual data. Open the Health app → Sharing → Apps → Ebb and allow Menstrual Cycle.")
+                .font(.footnote)
+                .foregroundStyle(theme.muted)
+            Button("Open Health app") {
+                openURL(URL(string: "x-apple-health://")!)
+            }
+
+        case .unavailable:
+            Text("HealthKit is not available on this device.")
+                .font(.footnote)
+                .foregroundStyle(theme.muted)
         }
     }
 
@@ -115,10 +130,10 @@ struct SettingsView: View {
     private var healthKitStatusLabel: String {
         switch cycleService.authorizationStatus {
         case .unavailable: "Unavailable"
-        case .notDetermined: "Not connected"
+        case .notDetermined: "Not connected — tap to connect"
         case .authorized:
             cycleService.healthKitPeriodDays.isEmpty ? "Connected (no data yet)" : "Connected"
-        case .denied: "Needs permission"
+        case .denied: "Needs permission — tap to try again"
         }
     }
 
@@ -139,24 +154,26 @@ struct SettingsView: View {
     // MARK: - Cycle info
 
     private var cycleInfoSection: some View {
-        Section {
+        @Bindable var preferences = cycleService.preferences
+
+        return Section {
             Stepper(
-                value: Bindable(cycleService.preferences).typicalCycleLength,
+                value: $preferences.typicalCycleLength,
                 in: CyclePreferences.cycleLengthRange,
                 step: 1
             ) {
                 LabeledContent("Typical cycle length") {
-                    Text("\(cycleService.preferences.typicalCycleLength) days")
+                    Text("\(preferences.typicalCycleLength) days")
                 }
             }
 
             Stepper(
-                value: Bindable(cycleService.preferences).periodLength,
+                value: $preferences.periodLength,
                 in: CyclePreferences.periodLengthRange,
                 step: 1
             ) {
                 LabeledContent("Typical period length") {
-                    Text("\(cycleService.preferences.periodLength) days")
+                    Text("\(preferences.periodLength) days")
                 }
             }
 
@@ -165,7 +182,7 @@ struct SettingsView: View {
                 .foregroundStyle(theme.muted)
                 .listRowBackground(theme.surface)
 
-            Toggle(isOn: Bindable(cycleService.preferences).hasAura) {
+            Toggle(isOn: $preferences.hasAura) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("I get migraine aura")
                     Text("Visual or sensory warning before a migraine. Recorded for your doctor export — Ebb never gives medical advice.")
