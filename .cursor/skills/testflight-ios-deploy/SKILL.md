@@ -19,10 +19,15 @@ are NOT used).
 | Bundle ID registration | `Ebb/ci/register_bundle_id.rb` |
 | App record existence check | `Ebb/ci/verify_app_store_connect_app.rb` |
 | Beta group + testers | `Ebb/ci/create_beta_group.rb` |
-| Export options | `Ebb/ExportOptions.plist` (`app-store-connect`, automatic signing) |
+| Export options | `Ebb/ExportOptions.plist` (`app-store-connect`, manual signing) |
+| Certificate cleanup | `Ebb/ci/prune_ephemeral_certificates.rb` |
+| Keychain/cert matching | `Ebb/ci/apple_signing_helpers.rb` |
+| Provisioning profile | `Ebb/ci/ensure_app_store_profile.rb` |
+| Signing import | `.github/actions/setup-apple-signing` |
 
 GitHub **secrets**: `DEVELOPMENT_TEAM` (Apple team ID), `APPSTORE_API_PRIVATE_KEY`
-(full `.p8` contents including BEGIN/END lines).
+(full `.p8` contents including BEGIN/END lines), `BUILD_CERTIFICATE_BASE64` (one
+Apple Distribution `.p12`), `P12_PASSWORD`, `KEYCHAIN_PASSWORD`.
 GitHub **variables**: `APPSTORE_ISSUER_ID`, `APPSTORE_API_KEY_ID`.
 The API key has the **Admin** role.
 
@@ -34,11 +39,16 @@ Pipeline order (job `deploy-testflight`, `macos-26` runner):
 2. `agvtool new-version -all $GITHUB_RUN_NUMBER` — monotonically increasing
    build numbers with no state in the repo.
 3. Register bundle ID (idempotent), verify the ASC app record exists.
-4. Create the internal beta group and add testers (idempotent).
-5. `xcodebuild archive` + `-exportArchive` with `-allowProvisioningUpdates`
-   and `-authenticationKey*` flags → automatic cloud signing, no certs or
-   profiles stored in CI.
-6. Upload with `apple-actions/upload-testflight-build@v3`.
+4. Import the single Apple Distribution `.p12` from `BUILD_CERTIFICATE_BASE64`
+   into a temporary keychain.
+5. **Prune ephemeral certificates** — revoke API-created development certs and
+   any extra distribution certs that do not match the imported `.p12`.
+6. Create the internal beta group and add testers (idempotent).
+7. Ensure/download the App Store provisioning profile for `com.bcbs.ebb` using
+   the same distribution certificate as the keychain.
+8. `xcodebuild archive` + `-exportArchive` with `CODE_SIGN_STYLE=Manual` and
+   **no** `-allowProvisioningUpdates` — reuses the stored cert every run.
+9. Upload with `apple-actions/upload-testflight-build@v3`.
 
 Auth boilerplate shared by all scripts:
 
@@ -100,7 +110,13 @@ Spaceship::ConnectAPI.post_beta_tester_assignment(
 6. **App Store uploads require the current iOS SDK** — hence the `macos-26`
    runner (Xcode 26). Older runner images get rejected by Apple.
 
-7. Idempotency pattern used everywhere: find first, create only if missing,
+7. **Do not use automatic signing in CI.** `-allowProvisioningUpdates` on
+   ephemeral GitHub runners creates a new IOS_DEVELOPMENT certificate every run,
+   hits Apple's certificate limit, and archives fail with "Choose a certificate
+   to revoke." Use one Apple Distribution `.p12` in `BUILD_CERTIFICATE_BASE64`
+   and manual signing instead.
+
+8. Idempotency pattern used everywhere: find first, create only if missing,
    exit 0 either way — every deploy re-runs all setup steps safely.
 
 ## Operational notes

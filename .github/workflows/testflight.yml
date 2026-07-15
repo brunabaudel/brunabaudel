@@ -135,53 +135,66 @@ jobs:
           gem install fastlane --no-document
           ruby Ebb/ci/verify_app_store_connect_app.rb
 
+      - name: Install Apple Distribution certificate
+        uses: ./.github/actions/setup-apple-signing
+        with:
+          certificate-base64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          certificate-password: ${{ secrets.P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Prune ephemeral Apple certificates
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+        run: |
+          gem install fastlane --no-document
+          ruby Ebb/ci/prune_ephemeral_certificates.rb
+
       - name: Create TestFlight internal group and add testers
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
         run: ruby Ebb/ci/create_beta_group.rb
 
-      - name: Build archive
+      - name: Ensure App Store provisioning profile
         env:
           APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+        run: |
+          gem install fastlane --no-document
+          ruby Ebb/ci/ensure_app_store_profile.rb | tee "$RUNNER_TEMP/profile.txt"
+          echo "PROFILE_UUID=$(grep '^PROFILE_UUID=' "$RUNNER_TEMP/profile.txt" | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$(grep '^PROFILE_NAME=' "$RUNNER_TEMP/profile.txt" | cut -d= -f2-)" >> "$GITHUB_ENV"
+
+      - name: Build archive
+        env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
         run: |
-          KEY_FILE="$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
-
           xcodebuild archive \
             -project Ebb/Ebb.xcodeproj \
             -scheme Ebb \
             -configuration Release \
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/Ebb.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_FILE" \
-            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
             DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Automatic
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
 
       - name: Export IPA
         env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
         run: |
           EXPORT_PLIST="$RUNNER_TEMP/ExportOptions.plist"
           cp Ebb/ExportOptions.plist "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :teamID string $DEVELOPMENT_TEAM" "$EXPORT_PLIST"
-
-          KEY_FILE="$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.bcbs.ebb string $PROFILE_NAME" "$EXPORT_PLIST"
 
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/Ebb.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$EXPORT_PLIST" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$KEY_FILE" \
-            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID"
+            -exportOptionsPlist "$EXPORT_PLIST"
 
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v3
