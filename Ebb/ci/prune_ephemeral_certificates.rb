@@ -32,6 +32,8 @@ def revoke_certificates(certs, label)
     display_name = cert.display_name || cert.name || cert.id
     puts "Revoking #{label}: #{display_name} (#{cert.id})"
     cert.delete!
+  rescue Spaceship::AccessForbiddenError => e
+    warn "Skipping #{label} #{cert.id}: #{e.message.split("\n").first}"
   end
 end
 

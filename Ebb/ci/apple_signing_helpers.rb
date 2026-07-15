@@ -14,7 +14,7 @@ module AppleSigningHelpers
     return nil unless File.exist?(KEYCHAIN_PATH)
 
     output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
-    match = output.match(/\)\s+([A-F0-9]{40})\s+"Apple Distribution/i)
+    match = output.match(/\)\s+([A-F0-9]{40})\s+"(?:Apple|iPhone) Distribution/i)
     match&.[](1)&.upcase
   end
 
