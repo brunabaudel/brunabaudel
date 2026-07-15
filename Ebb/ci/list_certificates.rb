@@ -69,6 +69,20 @@ keychain_fp = AppleSigningHelpers.keychain_fingerprint
 if keychain_fp
   puts "=== CI keychain (BUILD_CERTIFICATE_BASE64) ==="
   puts "  Apple Distribution fingerprint: #{keychain_fp}"
+
+  ios_distribution = Spaceship::ConnectAPI::Certificate.all(
+    filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
+  )
+  match = ios_distribution.find do |cert|
+    AppleSigningHelpers.certificate_fingerprint(cert) == keychain_fp
+  end
+
+  if match
+    status = match.valid? ? "valid" : "invalid"
+    puts "  MATCH: #{status} IOS_DISTRIBUTION #{match.display_name || match.id}"
+  else
+    puts "  NO MATCH among IOS_DISTRIBUTION certificates on this Apple account"
+  end
 else
   puts "=== CI keychain ==="
   puts "  No Apple Distribution identity imported (setup-apple-signing not run)"
