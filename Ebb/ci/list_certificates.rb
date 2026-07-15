@@ -66,10 +66,13 @@ rescue Spaceship::UnexpectedResponse => e
 end
 
 keychain_fp = AppleSigningHelpers.keychain_fingerprint
-if keychain_fp
-  puts "=== CI keychain (BUILD_CERTIFICATE_BASE64) ==="
-  puts "  Apple Distribution fingerprint: #{keychain_fp}"
+keychain_label = AppleSigningHelpers.keychain_identity_label
 
+puts "=== CI keychain (BUILD_CERTIFICATE_BASE64) ==="
+puts "  identity: #{keychain_label || 'not found'}"
+puts "  fingerprint: #{keychain_fp || 'not found'}"
+
+if keychain_fp
   ios_distribution = Spaceship::ConnectAPI::Certificate.all(
     filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
   )
@@ -84,6 +87,5 @@ if keychain_fp
     puts "  NO MATCH among IOS_DISTRIBUTION certificates on this Apple account"
   end
 else
-  puts "=== CI keychain ==="
-  puts "  No Apple Distribution identity imported (setup-apple-signing not run)"
+  puts "  Could not read a distribution signing identity from the imported .p12"
 end

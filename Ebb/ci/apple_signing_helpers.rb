@@ -15,7 +15,19 @@ module AppleSigningHelpers
 
     output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
     match = output.match(/\)\s+([A-F0-9]{40})\s+"(?:Apple|iPhone) Distribution/i)
-    match&.[](1)&.upcase
+    return match[1].upcase if match
+
+    # Fall back to the first codesigning identity for diagnostics.
+    any = output.match(/\)\s+([A-F0-9]{40})\s+"/i)
+    any&.[](1)&.upcase
+  end
+
+  def keychain_identity_label
+    return nil unless File.exist?(KEYCHAIN_PATH)
+
+    output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
+    match = output.match(/\)\s+[A-F0-9]{40}\s+"(.+)"$/i)
+    match&.[](1)
   end
 
   def certificate_fingerprint(cert)
