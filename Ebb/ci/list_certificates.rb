@@ -19,11 +19,26 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
   filepath: key_path
 )
 
-types = Spaceship::ConnectAPI::Certificate::CertificateType.constants.map do |name|
-  Spaceship::ConnectAPI::Certificate::CertificateType.const_get(name)
-rescue StandardError
-  nil
-end.compact.uniq.sort
+types = %w[
+  IOS_DEVELOPMENT
+  IOS_DISTRIBUTION
+  MAC_APP_DEVELOPMENT
+  MAC_APP_DISTRIBUTION
+  MAC_INSTALLER_DISTRIBUTION
+  DEVELOPMENT
+  DISTRIBUTION
+  DEVELOPER_ID_APPLICATION
+  DEVELOPER_ID_APPLICATION_G2
+  DEVELOPER_ID_KEXT
+  DEVELOPER_ID_KEXT_G2
+  APPLE_PAY
+  APPLE_PAY_MERCHANT_IDENTITY
+  APPLE_PAY_PSP_IDENTITY
+  APPLE_PAY_RSA
+  IDENTITY_ACCESS
+  PASS_TYPE_ID
+  PASS_TYPE_ID_WITH_NFC
+]
 
 puts "Apple Developer certificates for team (via App Store Connect API)"
 puts "API key: #{key_id}"
@@ -46,6 +61,8 @@ types.each do |cert_type|
     puts "           fingerprint: #{fp || 'unavailable'}"
     puts
   end
+rescue Spaceship::UnexpectedResponse => e
+  warn "Skipping #{cert_type}: #{e.message.split("\n").first}"
 end
 
 keychain_fp = AppleSigningHelpers.keychain_fingerprint
