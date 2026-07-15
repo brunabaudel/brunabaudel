@@ -30,10 +30,11 @@ EbbTests/         Swift Testing unit tests
 ## Tests
 
 ```sh
+DEST="$(bash ci/resolve_simulator_destination.sh)"
 xcodebuild test \
   -project Ebb.xcodeproj \
   -scheme Ebb \
-  -destination "platform=iOS Simulator,name=iPhone 17"
+  -destination "$DEST"
 ```
 
 ## Deploy to your iPhone (TestFlight)
