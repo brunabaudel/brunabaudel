@@ -1,0 +1,44 @@
+name: List Apple certificates
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - app/ebb
+    paths:
+      - "Ebb/ci/list_certificates.rb"
+      - ".github/workflows/list-apple-certs.yml"
+
+jobs:
+  list-certificates:
+    name: List developer account certificates
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure App Store Connect API key
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          KEY_FILE="$KEY_DIR/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          mkdir -p "$KEY_DIR"
+          printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+
+      - name: Import distribution certificate for fingerprint comparison
+        uses: ./.github/actions/setup-apple-signing
+        with:
+          certificate-base64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          certificate-password: ${{ secrets.P12_PASSWORD }}
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: List all certificates
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          gem install fastlane --no-document
+          ruby Ebb/ci/list_certificates.rb | tee "$GITHUB_STEP_SUMMARY"
