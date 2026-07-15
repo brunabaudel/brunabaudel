@@ -226,4 +226,5 @@ struct TodayView: View {
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
+        .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
 }
