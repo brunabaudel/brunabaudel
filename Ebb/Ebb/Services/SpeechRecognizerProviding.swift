@@ -12,6 +12,6 @@ protocol SpeechRecognizerProviding: Sendable {
     var isAvailable: Bool { get }
     func authorizationStatus() -> SpeechAuthStatus
     func requestAuthorization() async throws
-    func startTranscription() -> AsyncThrowingStream<String, Error>
+    func startTranscription() async -> AsyncThrowingStream<String, Error>
     func stopTranscription() async
 }

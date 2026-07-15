@@ -53,7 +53,8 @@ final class SpeechCapture {
 
         listeningTask = Task {
             do {
-                for try await partial in provider.startTranscription() {
+                let stream = await provider.startTranscription()
+                for try await partial in stream {
                     guard !Task.isCancelled else { break }
                     transcript = partial
                 }

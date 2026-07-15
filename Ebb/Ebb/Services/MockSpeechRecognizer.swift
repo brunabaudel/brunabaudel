@@ -11,7 +11,7 @@ struct MockSpeechRecognizer: SpeechRecognizerProviding {
 
     func requestAuthorization() async throws {}
 
-    func startTranscription() -> AsyncThrowingStream<String, Error> {
+    func startTranscription() async -> AsyncThrowingStream<String, Error> {
         let words = transcript.split(separator: " ").map(String.init)
         return AsyncThrowingStream { continuation in
             let task = Task {

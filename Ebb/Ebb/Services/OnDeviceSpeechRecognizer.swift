@@ -64,7 +64,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         }
     }
 
-    func startTranscription() -> AsyncThrowingStream<String, Error> {
+    func startTranscription() async -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
