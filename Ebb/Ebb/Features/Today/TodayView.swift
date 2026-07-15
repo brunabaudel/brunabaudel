@@ -5,22 +5,22 @@ struct TodayView: View {
     let schema: SchemaConfig
 
     @Environment(\.theme) private var theme
+    @Environment(CycleService.self) private var cycleService
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showTapLog = false
     @State private var editingEntry: SymptomEntry?
+
+    private var cycleSnapshot: CycleSnapshot {
+        cycleService.snapshot(for: .now, entries: entries)
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     header
-                    CyclePhaseRing(
-                        phase: .luteal,
-                        cycleDay: 22,
-                        cycleLength: 28,
-                        summary: "Placeholder until HealthKit connects in Phase 4."
-                    )
+                    cycleRing
                     daySummarySection
                     logButtons
                     entriesSection
@@ -40,6 +40,35 @@ struct TodayView: View {
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
                     showTapLog = true
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var cycleRing: some View {
+        if let phase = cycleSnapshot.phase, let cycleDay = cycleSnapshot.cycleDay {
+            CyclePhaseRing(
+                phase: phase,
+                cycleDay: cycleDay,
+                cycleLength: cycleSnapshot.cycleLength,
+                summary: cycleSnapshot.summary
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Cycle")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.cycle)
+                Text(cycleSnapshot.summary)
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 24))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24)
+                    .strokeBorder(theme.line, lineWidth: 1)
             }
         }
     }
@@ -159,6 +188,7 @@ struct TodayView: View {
     TodayView(schema: try! SchemaConfig.load())
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
 }
 
 #Preview("With entries") {
@@ -176,4 +206,5 @@ struct TodayView: View {
     return TodayView(schema: schema)
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
 }

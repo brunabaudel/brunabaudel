@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The signature cycle-phase ring from the UI board. Phase 4 feeds real
-/// HealthKit data; until then callers pass a placeholder phase.
+/// The signature cycle-phase ring from the UI board. Phase is fed by
+/// `CycleService` from HealthKit flow data and logged bleeding.
 struct CyclePhaseRing: View {
     let phase: CyclePhase
     let cycleDay: Int

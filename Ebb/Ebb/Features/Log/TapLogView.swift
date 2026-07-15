@@ -10,6 +10,8 @@ struct TapLogView: View {
     @Environment(\.theme) private var theme
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(CycleService.self) private var cycleService
+    @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var values: [String: FieldValue] = [:]
     @State private var showDeleteConfirmation = false
@@ -72,10 +74,20 @@ struct TapLogView: View {
         if let entry {
             entry.fieldValues = validated
             entry.schemaVersion = schema.schemaVersion
+            entry.cyclePhase = cycleService.phase(for: entry.timestamp, entries: entries)
         } else {
+            let timestamp = Date.now
+            let extraPeriodDays = bleedingDays(from: validated, on: timestamp)
+            let phase = cycleService.phase(
+                for: timestamp,
+                entries: entries,
+                extraPeriodDays: extraPeriodDays
+            )
             let newEntry = SymptomEntry(
+                timestamp: timestamp,
                 schemaVersion: schema.schemaVersion,
-                fieldValues: validated
+                fieldValues: validated,
+                cyclePhase: phase
             )
             modelContext.insert(newEntry)
         }
@@ -90,12 +102,20 @@ struct TapLogView: View {
         try? modelContext.save()
         dismiss()
     }
+
+    private func bleedingDays(from values: [String: FieldValue], on date: Date) -> Set<Date> {
+        guard case .choice(let key)? = values["bleeding"], key != "none" else {
+            return []
+        }
+        return [Calendar.ebbCalendar.startOfDay(for: date)]
+    }
 }
 
 #Preview("New entry") {
     TapLogView(schema: try! SchemaConfig.load())
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider()))
 }
 
 #Preview("Edit entry") {
@@ -107,4 +127,5 @@ struct TapLogView: View {
     return TapLogView(schema: schema, entry: entry)
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider()))
 }

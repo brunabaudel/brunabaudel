@@ -5,6 +5,7 @@ struct CalendarView: View {
     let schema: SchemaConfig
 
     @Environment(\.theme) private var theme
+    @Environment(CycleService.self) private var cycleService
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var displayMode: CalendarDisplayMode = .month
@@ -15,7 +16,7 @@ struct CalendarView: View {
 
     private var calendar: Calendar { .ebbCalendar }
     private var overlay: CalendarCycleOverlay {
-        CalendarCycleOverlay.build(from: entries, calendar: calendar)
+        cycleService.makeOverlay(from: entries)
     }
 
     var body: some View {
@@ -537,12 +538,6 @@ private enum CalendarDisplayMode {
 // MARK: - Calendar helpers
 
 private extension Calendar {
-    static var ebbCalendar: Calendar {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2
-        return calendar
-    }
-
     func startOfMonth(for date: Date) -> Date {
         let components = dateComponents([.year, .month], from: date)
         return self.date(from: components) ?? startOfDay(for: date)
@@ -573,6 +568,7 @@ private extension Calendar {
     CalendarView(schema: try! SchemaConfig.load())
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider()))
 }
 
 #Preview("With data") {
@@ -600,4 +596,5 @@ private extension Calendar {
     return CalendarView(schema: schema)
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
+        .environment(CycleService(provider: MockCycleDataProvider()))
 }
