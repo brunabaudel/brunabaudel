@@ -9,6 +9,21 @@ require_relative "apple_signing_helpers"
 
 BUNDLE_ID = "com.bcbs.ebb"
 PROFILE_NAME = "Ebb App Store CI"
+HEALTHKIT = Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT
+
+def ensure_healthkit_capability(bundle)
+  enabled = bundle.get_capabilities.any? { |cap| cap.is_type?(HEALTHKIT) }
+  return if enabled
+
+  bundle.create_capability(HEALTHKIT)
+  puts "Enabled HealthKit capability on #{BUNDLE_ID}"
+end
+
+def profile_includes_healthkit?(profile)
+  return false if profile.profile_content.to_s.empty?
+
+  Base64.decode64(profile.profile_content).include?("com.apple.developer.healthkit")
+end
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
@@ -27,6 +42,8 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
 
 bundle = Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
 abort("Bundle ID not found: #{BUNDLE_ID}") unless bundle
+
+ensure_healthkit_capability(bundle)
 
 distribution_certs = Spaceship::ConnectAPI::Certificate.all(
   filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
@@ -58,6 +75,12 @@ profile = profiles.find do |candidate|
   candidate.certificates&.any? { |cert| cert.id == distribution_cert.id }
 end
 
+if profile && !profile_includes_healthkit?(profile)
+  puts "Regenerating App Store profile — existing profile lacks HealthKit entitlement"
+  profile.delete!
+  profile = nil
+end
+
 unless profile
   puts "Creating App Store provisioning profile: #{PROFILE_NAME}"
   profile = Spaceship::ConnectAPI::Profile.create(
@@ -71,6 +94,13 @@ else
 end
 
 abort("Provisioning profile has no content") if profile.profile_content.to_s.empty?
+
+unless profile_includes_healthkit?(profile)
+  abort(
+    "Provisioning profile still missing HealthKit entitlement after regeneration. " \
+    "Enable HealthKit on #{BUNDLE_ID} in Apple Developer → Identifiers, then re-run."
+  )
+end
 
 profile_bytes = Base64.decode64(profile.profile_content)
 profile_path = File.join(profiles_dir, "#{profile.uuid}.mobileprovision")
