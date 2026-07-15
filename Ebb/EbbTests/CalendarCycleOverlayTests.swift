@@ -119,12 +119,18 @@ struct CycleServiceTests {
         return cal
     }
 
+    private func makeDefaults() -> UserDefaults {
+        let suite = "ebb.cycle.service.tests.\(UUID().uuidString)"
+        return UserDefaults(suiteName: suite)!
+    }
+
     @Test @MainActor func stampsPhaseFromMockHealthKitData() async {
         let periodStart = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
         let periodDays = (0..<5).compactMap { calendar.date(byAdding: .day, value: $0, to: periodStart) }
         let provider = MockCycleDataProvider(periodDays: Set(periodDays))
+        let preferences = CyclePreferences(defaults: makeDefaults())
         let service = CycleService(
-            preferences: CyclePreferences(),
+            preferences: preferences,
             provider: provider,
             calendar: calendar
         )
@@ -138,7 +144,12 @@ struct CycleServiceTests {
 
     @Test @MainActor func extraPeriodDaysIncludedWhenSaving() async {
         let provider = MockCycleDataProvider()
-        let service = CycleService(provider: provider, calendar: calendar)
+        let preferences = CyclePreferences(defaults: makeDefaults())
+        let service = CycleService(
+            preferences: preferences,
+            provider: provider,
+            calendar: calendar
+        )
         let day = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
 
         let phase = service.phase(

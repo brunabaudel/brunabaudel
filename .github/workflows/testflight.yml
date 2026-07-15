@@ -32,13 +32,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve iOS Simulator
+        id: simulator
+        run: echo "destination=$(bash Ebb/ci/resolve_simulator_destination.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Build and run unit tests on iOS Simulator
         run: |
           xcodebuild test \
             -project Ebb/Ebb.xcodeproj \
             -scheme Ebb \
             -configuration Debug \
-            -destination "platform=iOS Simulator,name=iPhone 17" \
+            -destination "${{ steps.simulator.outputs.destination }}" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO
 

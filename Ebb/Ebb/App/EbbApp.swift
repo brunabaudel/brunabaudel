@@ -6,7 +6,7 @@ struct EbbApp: App {
     /// Loaded once at launch; the schema is bundled, so failure means a broken
     /// build — surfaced on the debug screen rather than crashing.
     private let schemaLoadResult = Result { try SchemaConfig.load() }
-    @State private var cycleService = CycleService()
+    @State private var cycleService = Self.makeCycleService()
 
     var body: some Scene {
         WindowGroup {
@@ -14,10 +14,36 @@ struct EbbApp: App {
                 .environment(\.theme, .plumEmber)
                 .environment(cycleService)
                 .task {
+                    guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
                 }
         }
-        .modelContainer(for: SymptomEntry.self)
+        .modelContainer(Self.modelContainer)
+    }
+
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
+    private static let modelContainer: ModelContainer = {
+        do {
+            if isRunningTests {
+                return try ModelContainer(
+                    for: SymptomEntry.self,
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                )
+            }
+            return try ModelContainer(for: SymptomEntry.self)
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }()
+
+    private static func makeCycleService() -> CycleService {
+        if isRunningTests {
+            return CycleService(provider: MockCycleDataProvider())
+        }
+        return CycleService()
     }
 }
 
