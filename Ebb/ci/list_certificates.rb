@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+# Lists Apple Developer certificates and compares BUILD_CERTIFICATE_BASE64.
 
 require "spaceship"
 
