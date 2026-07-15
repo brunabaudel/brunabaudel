@@ -9,6 +9,8 @@ struct TodayView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showTapLog = false
+    @State private var showTalkLog = false
+    @State private var talkDraftNote: String?
     @State private var editingEntry: SymptomEntry?
 
     private var cycleSnapshot: CycleSnapshot {
@@ -31,14 +33,31 @@ struct TodayView: View {
             .foregroundStyle(theme.text)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showTapLog) {
-                TapLogView(schema: schema)
+                TapLogView(schema: schema, initialNote: talkDraftNote)
+            }
+            .sheet(isPresented: $showTalkLog, onDismiss: {
+                if talkDraftNote != nil {
+                    showTapLog = true
+                }
+            }) {
+                TalkView(schema: schema) { transcript in
+                    talkDraftNote = transcript
+                }
             }
             .sheet(item: $editingEntry) { entry in
                 TapLogView(schema: schema, entry: entry)
             }
+            .onChange(of: showTapLog) { _, isPresented in
+                if !isPresented {
+                    talkDraftNote = nil
+                }
+            }
             .onAppear {
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
                     showTapLog = true
+                }
+                if ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog {
+                    showTalkLog = true
                 }
             }
         }
@@ -95,15 +114,14 @@ struct TodayView: View {
 
     private var logButtons: some View {
         HStack(spacing: 11) {
-            Button {} label: {
+            Button { showTalkLog = true } label: {
                 logButton(
                     title: "Talk",
-                    hint: "Coming in Phase 5",
+                    hint: "Say how you feel",
                     style: .talk,
                     systemImage: "mic.fill"
                 )
             }
-            .disabled(true)
 
             Button { showTapLog = true } label: {
                 logButton(
@@ -189,6 +207,7 @@ struct TodayView: View {
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
+        .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
 }
 
 #Preview("With entries") {

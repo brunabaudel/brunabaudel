@@ -7,12 +7,14 @@ struct EbbApp: App {
     /// build — surfaced on the debug screen rather than crashing.
     private let schemaLoadResult = Result { try SchemaConfig.load() }
     @State private var cycleService = Self.makeCycleService()
+    @State private var speechCapture = Self.makeSpeechCapture()
 
     var body: some Scene {
         WindowGroup {
             RootView(schemaLoadResult: schemaLoadResult)
                 .environment(\.theme, .plumEmber)
                 .environment(cycleService)
+                .environment(speechCapture)
                 .task {
                     guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
@@ -44,6 +46,13 @@ struct EbbApp: App {
             return CycleService(provider: MockCycleDataProvider())
         }
         return CycleService()
+    }
+
+    private static func makeSpeechCapture() -> SpeechCapture {
+        if isRunningTests {
+            return SpeechCapture(provider: MockSpeechRecognizer(transcript: ""))
+        }
+        return SpeechCapture()
     }
 }
 

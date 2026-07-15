@@ -73,7 +73,8 @@ capture() {
 
 capture "01-today"
 capture "02-tap-log" --args -AutoTapLog
-capture "03-calendar" --args -OpenTabCalendar
+capture "03-talk" --args -AutoTalkLog -MockTranscript "dull one on the right, barely there, worse when I move"
+capture "04-calendar" --args -OpenTabCalendar
 
 echo "Screenshots saved to $SCREENS_DIR:"
 ls -la "$SCREENS_DIR"

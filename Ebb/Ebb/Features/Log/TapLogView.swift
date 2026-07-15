@@ -6,6 +6,8 @@ import SwiftUI
 struct TapLogView: View {
     let schema: SchemaConfig
     var entry: SymptomEntry?
+    /// Verbatim transcript from Talk (Phase 5) — shown at the top, never rewritten.
+    var initialNote: String? = nil
 
     @Environment(\.theme) private var theme
     @Environment(\.modelContext) private var modelContext
@@ -14,6 +16,7 @@ struct TapLogView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var values: [String: FieldValue] = [:]
+    @State private var note: String = ""
     @State private var showDeleteConfirmation = false
 
     private var isEditing: Bool { entry != nil }
@@ -25,6 +28,10 @@ struct TapLogView: View {
                     Text(isEditing ? "Update what applies. Leave anything blank." : "Tap what applies. You can leave anything blank.")
                         .font(.footnote)
                         .foregroundStyle(theme.muted)
+
+                    if !note.isEmpty {
+                        noteSection
+                    }
 
                     SchemaFormView(schema: schema, values: $values)
 
@@ -63,17 +70,41 @@ struct TapLogView: View {
             .onAppear {
                 if let entry {
                     values = entry.fieldValues
+                    note = entry.note ?? ""
+                } else if let initialNote {
+                    note = initialNote
                 }
             }
         }
     }
 
+    private var noteSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionHeader(title: "You said")
+            Text(note)
+                .font(.subheadline)
+                .foregroundStyle(theme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(12)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(theme.line, lineWidth: 1)
+                }
+                .accessibilityLabel("You said: \(note)")
+        }
+    }
+
     private func save() {
         let validated = schema.validated(values)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let storedNote = trimmedNote.isEmpty ? nil : trimmedNote
 
         if let entry {
             entry.fieldValues = validated
             entry.schemaVersion = schema.schemaVersion
+            entry.note = storedNote
             entry.cyclePhase = cycleService.phase(for: entry.timestamp, entries: entries)
         } else {
             let timestamp = Date.now
@@ -87,6 +118,7 @@ struct TapLogView: View {
                 timestamp: timestamp,
                 schemaVersion: schema.schemaVersion,
                 fieldValues: validated,
+                note: storedNote,
                 cyclePhase: phase
             )
             modelContext.insert(newEntry)
@@ -109,6 +141,16 @@ struct TapLogView: View {
         }
         return [Calendar.ebbCalendar.startOfDay(for: date)]
     }
+}
+
+#Preview("With transcript") {
+    TapLogView(
+        schema: try! SchemaConfig.load(),
+        initialNote: "dull one on the right, barely there"
+    )
+    .modelContainer(for: SymptomEntry.self, inMemory: true)
+    .environment(\.theme, .plumEmber)
+    .environment(CycleService(provider: MockCycleDataProvider()))
 }
 
 #Preview("New entry") {
