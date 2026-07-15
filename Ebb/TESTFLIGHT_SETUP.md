@@ -32,9 +32,9 @@ openssl rand -base64 32 | pbcopy            # → KEYCHAIN_PASSWORD
 5. Set `P12_PASSWORD` to the export password you chose in step 3.
 
 The deploy job also runs `ci/prune_ephemeral_certificates.rb` after importing the
-`.p12` to revoke leftover API-created development certificates and any extra
-distribution certificates that do not match `BUILD_CERTIFICATE_BASE64`, leaving
-exactly one Apple Distribution certificate on the account.
+`.p12` to revoke leftover API-created development certificates, verify
+`BUILD_CERTIFICATE_BASE64` matches a valid IOS_DISTRIBUTION certificate, and
+warn about any other distribution certificates on the account (without revoking them).
 
 ## GitHub variables
 

@@ -10,8 +10,8 @@ require_relative "apple_signing_helpers"
 # Apple caps certificates per account, which eventually breaks archives.
 #
 # This script revokes IOS_DEVELOPMENT certificates (not needed for TestFlight
-# archives) and keeps exactly one IOS_DISTRIBUTION certificate — the one
-# imported from BUILD_CERTIFICATE_BASE64 into the CI keychain.
+# archives) and verifies BUILD_CERTIFICATE_BASE64 matches a valid IOS_DISTRIBUTION
+# certificate. Extra IOS_DISTRIBUTION certificates are reported but never revoked.
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
 issuer_id = ENV.fetch("APPSTORE_ISSUER_ID")
@@ -89,13 +89,17 @@ unless keep_cert
 end
 
 display_name = keep_cert.display_name || keep_cert.name || keep_cert.id
-puts "Keeping IOS_DISTRIBUTION: #{display_name} (#{keep_cert.id})"
+puts "Using IOS_DISTRIBUTION for CI: #{display_name} (#{keep_cert.id})"
 
 extra_distribution = distribution_certs.reject { |cert| cert.id == keep_cert.id }
 
 if extra_distribution.empty?
-  puts "No extra IOS_DISTRIBUTION certificates to revoke"
+  puts "No other valid IOS_DISTRIBUTION certificates on this account"
 else
-  puts "Revoking #{extra_distribution.length} extra IOS_DISTRIBUTION certificate(s)"
-  revoke_certificates(extra_distribution, "IOS_DISTRIBUTION")
+  puts "Warning: #{extra_distribution.length} other valid IOS_DISTRIBUTION certificate(s) on this account (not revoked):"
+  extra_distribution.each do |cert|
+    name = cert.display_name || cert.name || cert.id
+    fp = AppleSigningHelpers.certificate_fingerprint(cert)
+    puts "  - #{name} (#{cert.id}) fingerprint=#{fp}"
+  end
 end

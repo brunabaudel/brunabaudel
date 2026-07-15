@@ -41,8 +41,9 @@ Pipeline order (job `deploy-testflight`, `macos-26` runner):
 3. Register bundle ID (idempotent), verify the ASC app record exists.
 4. Import the single Apple Distribution `.p12` from `BUILD_CERTIFICATE_BASE64`
    into a temporary keychain.
-5. **Prune ephemeral certificates** — revoke API-created development certs and
-   any extra distribution certs that do not match the imported `.p12`.
+5. **Prune ephemeral certificates** — revoke API-created development certs,
+   verify the imported `.p12` matches a valid IOS_DISTRIBUTION certificate, and
+   warn about other distribution certs (never revoked).
 6. Create the internal beta group and add testers (idempotent).
 7. Ensure/download the App Store provisioning profile for `com.bcbs.ebb` using
    the same distribution certificate as the keychain.
