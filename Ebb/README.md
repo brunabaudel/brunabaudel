@@ -2,6 +2,7 @@
 
 A privacy-first, on-device menstrual-migraine and period symptom tracker.
 
+<!-- CI: TestFlight retry 2026-07-15 -->
 See `../docs/ebb-build-plan.md` for the phased plan and architecture, and
 `../docs/symptom-tracker-classification-spec.md` for the schema that drives
 both the UI and (later) the on-device classifier.
