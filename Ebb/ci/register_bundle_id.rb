@@ -22,14 +22,22 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
 
 existing = Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
 if existing
+  unless existing.get_capabilities.any? do |cap|
+           cap.is_type?(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
+         end
+    existing.create_capability(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
+    puts "Enabled HealthKit capability on #{BUNDLE_ID}"
+  end
   puts "Bundle ID already registered: #{BUNDLE_ID}"
   exit 0
 end
 
-Spaceship::ConnectAPI::BundleId.create(
+bundle = Spaceship::ConnectAPI::BundleId.create(
   name: BUNDLE_NAME,
   identifier: BUNDLE_ID,
   platform: Spaceship::ConnectAPI::Platform::IOS
 )
+
+bundle.create_capability(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
 
 puts "Registered bundle ID: #{BUNDLE_ID}"
