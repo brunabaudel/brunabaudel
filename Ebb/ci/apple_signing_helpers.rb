@@ -15,7 +15,7 @@ module AppleSigningHelpers
 
     output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
     match = output.match(/\)\s+([A-F0-9]{40})\s+"Apple Distribution/i)
-    match&.[](1)
+    match&.[](1)&.upcase
   end
 
   def certificate_fingerprint(cert)

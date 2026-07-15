@@ -53,6 +53,32 @@ distribution_certs = Spaceship::ConnectAPI::Certificate.all(
 keep_cert = AppleSigningHelpers.find_distribution_cert_matching_keychain(distribution_certs)
 
 unless keep_cert
+  keychain_fp = AppleSigningHelpers.keychain_fingerprint
+  all_distribution = Spaceship::ConnectAPI::Certificate.all(
+    filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
+  )
+
+  puts "Keychain Apple Distribution fingerprint: #{keychain_fp || 'not found'}"
+  all_distribution.each do |cert|
+    fp = AppleSigningHelpers.certificate_fingerprint(cert)
+    status = cert.valid? ? "valid" : "invalid"
+    display_name = cert.display_name || cert.name || cert.id
+    puts "  #{status} IOS_DISTRIBUTION: #{display_name} (#{cert.id}) fingerprint=#{fp}"
+  end
+
+  revoked_match = all_distribution.find do |cert|
+    !cert.valid? &&
+      AppleSigningHelpers.certificate_fingerprint(cert) == keychain_fp
+  end
+
+  if revoked_match
+    abort(
+      "BUILD_CERTIFICATE_BASE64 matches a revoked or expired IOS_DISTRIBUTION certificate " \
+      "(#{revoked_match.id}). Create a new Apple Distribution certificate in Apple Developer, " \
+      "export its .p12 with private key, and update BUILD_CERTIFICATE_BASE64."
+    )
+  end
+
   abort(
     "The Apple Distribution certificate in BUILD_CERTIFICATE_BASE64 does not match " \
     "any valid IOS_DISTRIBUTION certificate on the Apple Developer account. " \
