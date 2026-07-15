@@ -162,7 +162,12 @@ jobs:
           APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
         run: |
           gem install fastlane --no-document
-          ruby Ebb/ci/ensure_app_store_profile.rb | tee "$RUNNER_TEMP/profile.txt"
+          ruby Ebb/ci/ensure_app_store_profile.rb > "$RUNNER_TEMP/profile.txt"
+          cat "$RUNNER_TEMP/profile.txt"
+          grep -q '^PROFILE_NAME=' "$RUNNER_TEMP/profile.txt" || {
+            echo "ensure_app_store_profile.rb did not emit PROFILE_NAME"
+            exit 1
+          }
           echo "PROFILE_UUID=$(grep '^PROFILE_UUID=' "$RUNNER_TEMP/profile.txt" | cut -d= -f2-)" >> "$GITHUB_ENV"
           echo "PROFILE_NAME=$(grep '^PROFILE_NAME=' "$RUNNER_TEMP/profile.txt" | cut -d= -f2-)" >> "$GITHUB_ENV"
 
