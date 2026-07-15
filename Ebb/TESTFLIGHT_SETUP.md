@@ -137,3 +137,4 @@ Review).
 | `maximum number of certificates` | Revoke extra certs in Apple Developer; ensure `BUILD_CERTIFICATE_BASE64` is set so CI stops minting new ones |
 | `Missing Apple Distribution certificate secret` | Add `BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`, and `KEYCHAIN_PASSWORD` (see above) |
 | `No valid IOS_DISTRIBUTION certificate found` | Create or restore one Apple Distribution certificate, export `.p12`, update `BUILD_CERTIFICATE_BASE64` |
+| `does not match any valid IOS_DISTRIBUTION` | Re-export the `.p12` for the valid Apple Distribution cert on your account (must include private key) |
