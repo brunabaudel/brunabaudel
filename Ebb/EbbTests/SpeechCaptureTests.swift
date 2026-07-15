@@ -30,4 +30,24 @@ struct SpeechCaptureTests {
         #expect(capture.isListening == false)
         #expect(capture.transcript.isEmpty)
     }
+
+    @Test @MainActor func surfacesRecognitionErrors() async {
+        struct FailingRecognizer: SpeechRecognizerProviding {
+            var isAvailable: Bool { true }
+            func authorizationStatus() -> SpeechAuthStatus { .authorized }
+            func requestAuthorization() async throws {}
+            func startTranscription() async -> AsyncThrowingStream<String, Error> {
+                AsyncThrowingStream { continuation in
+                    continuation.finish(throwing: SpeechCaptureError.onDeviceRecognitionUnavailable)
+                }
+            }
+            func stopTranscription() async {}
+        }
+
+        let capture = SpeechCapture(provider: FailingRecognizer())
+        capture.startListening()
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(capture.listeningError != nil)
+        #expect(capture.isListening == false)
+    }
 }

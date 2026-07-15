@@ -9,6 +9,7 @@ final class SpeechCapture {
     private(set) var authorizationStatus: SpeechAuthStatus = .unavailable
     private(set) var transcript: String = ""
     private(set) var isListening: Bool = false
+    private(set) var listeningError: String?
 
     private let provider: any SpeechRecognizerProviding
     private var listeningTask: Task<Void, Never>?
@@ -49,6 +50,7 @@ final class SpeechCapture {
         stopListening()
 
         transcript = ""
+        listeningError = nil
         isListening = true
 
         let provider = provider
@@ -59,10 +61,16 @@ final class SpeechCapture {
                     guard !Task.isCancelled else { break }
                     await MainActor.run {
                         self?.transcript = partial
+                        self?.listeningError = nil
                     }
                 }
+            } catch is CancellationError {
+                return
             } catch {
                 guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    self?.listeningError = Self.userMessage(for: error)
+                }
             }
             await MainActor.run {
                 self?.isListening = false
@@ -79,5 +87,13 @@ final class SpeechCapture {
 
     func resetTranscript() {
         transcript = ""
+        listeningError = nil
+    }
+
+    private static func userMessage(for error: Error) -> String {
+        if let captureError = error as? SpeechCaptureError {
+            return captureError.userMessage
+        }
+        return "Couldn't capture speech. Try again or use Tap instead."
     }
 }
