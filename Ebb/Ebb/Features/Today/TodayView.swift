@@ -10,8 +10,11 @@ struct TodayView: View {
 
     @State private var showTapLog = false
     @State private var showTalkLog = false
-    @State private var talkDraftNote: String?
+    @State private var showConfirm = false
+    @State private var confirmViewModel: ConfirmViewModel?
     @State private var editingEntry: SymptomEntry?
+
+    @Environment(\.symptomClassifier) private var symptomClassifier
 
     private var cycleSnapshot: CycleSnapshot {
         cycleService.snapshot(for: .now, entries: entries)
@@ -33,24 +36,27 @@ struct TodayView: View {
             .foregroundStyle(theme.text)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showTapLog) {
-                TapLogView(schema: schema, initialNote: talkDraftNote)
+                TapLogView(schema: schema)
             }
-            .sheet(isPresented: $showTalkLog, onDismiss: {
-                if talkDraftNote != nil {
-                    showTapLog = true
-                }
-            }) {
+            .sheet(isPresented: $showTalkLog) {
                 TalkView(schema: schema) { transcript in
-                    talkDraftNote = transcript
+                    confirmViewModel = ConfirmViewModel(
+                        transcript: transcript,
+                        schema: schema,
+                        classifier: symptomClassifier
+                    )
+                    showConfirm = true
+                }
+            }
+            .sheet(isPresented: $showConfirm, onDismiss: {
+                confirmViewModel = nil
+            }) {
+                if let confirmViewModel {
+                    ConfirmView(schema: schema, viewModel: confirmViewModel)
                 }
             }
             .sheet(item: $editingEntry) { entry in
                 TapLogView(schema: schema, entry: entry)
-            }
-            .onChange(of: showTapLog) { _, isPresented in
-                if !isPresented {
-                    talkDraftNote = nil
-                }
             }
             .onAppear {
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
@@ -58,6 +64,15 @@ struct TodayView: View {
                 }
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog {
                     showTalkLog = true
+                }
+                if ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog,
+                   let transcript = ProcessInfo.processInfo.mockTranscriptText {
+                    confirmViewModel = ConfirmViewModel(
+                        transcript: transcript,
+                        schema: schema,
+                        classifier: symptomClassifier
+                    )
+                    showConfirm = true
                 }
             }
         }
@@ -208,6 +223,7 @@ struct TodayView: View {
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
+        .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }
 
 #Preview("With entries") {
@@ -227,4 +243,5 @@ struct TodayView: View {
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
+        .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }

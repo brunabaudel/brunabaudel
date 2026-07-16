@@ -4,6 +4,7 @@ import Foundation
 enum LaunchArguments {
     static let autoTapLog = "-AutoTapLog"
     static let autoTalkLog = "-AutoTalkLog"
+    static let autoConfirmLog = "-AutoConfirmLog"
     static let openTabCalendar = "-OpenTabCalendar"
     static let mockTranscript = "-MockTranscript"
 }
@@ -15,6 +16,10 @@ extension ProcessInfo {
 
     var hasLaunchArgumentAutoTalkLog: Bool {
         arguments.contains(LaunchArguments.autoTalkLog)
+    }
+
+    var hasLaunchArgumentAutoConfirmLog: Bool {
+        arguments.contains(LaunchArguments.autoConfirmLog)
     }
 
     var hasLaunchArgumentOpenTabCalendar: Bool {

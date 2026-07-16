@@ -15,6 +15,7 @@ struct EbbApp: App {
                 .environment(\.theme, .plumEmber)
                 .environment(cycleService)
                 .environment(speechCapture)
+                .environment(\.symptomClassifier, Self.makeSymptomClassifier())
                 .task {
                     guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
@@ -53,6 +54,13 @@ struct EbbApp: App {
             return SpeechCapture(provider: MockSpeechRecognizer(transcript: ""))
         }
         return SpeechCapture()
+    }
+
+    private static func makeSymptomClassifier() -> any SymptomClassifier {
+        if isRunningTests {
+            return SynonymSymptomClassifier()
+        }
+        return SymptomClassifierFactory.makeDefault()
     }
 }
 
