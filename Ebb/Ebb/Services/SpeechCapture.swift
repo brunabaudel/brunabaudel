@@ -85,6 +85,9 @@ final class SpeechCapture {
     }
 
     private func applyPartialTranscript(_ partial: String) {
+        // Ignore empty heartbeats between recognition segments so a pause never
+        // wipes text the user already saw on screen.
+        guard !partial.isEmpty else { return }
         transcript = partial
         listeningError = nil
     }
