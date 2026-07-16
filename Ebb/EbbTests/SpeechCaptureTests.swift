@@ -37,7 +37,7 @@ struct SpeechCaptureTests {
         #expect(capture.transcript == "dull one on the right barely there")
     }
 
-    @Test @MainActor func ignoresEmptyPartialHeartbeats() async {
+    @Test @MainActor func ignoresEmptyPartialHeartbeats() async throws {
         struct HeartbeatRecognizer: SpeechRecognizerProviding {
             var isAvailable: Bool { true }
             func authorizationStatus() -> SpeechAuthStatus { .authorized }
