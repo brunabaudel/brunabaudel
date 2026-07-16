@@ -81,9 +81,19 @@ struct TalkView: View {
 
             LiveTranscriptCard(
                 transcript: speechCapture.transcript,
-                isListening: speechCapture.isListening
+                isListening: speechCapture.isListening,
+                errorMessage: speechCapture.listeningError
             )
             .padding(.horizontal, 20)
+
+            if speechCapture.listeningError != nil {
+                Button("Try again") {
+                    speechCapture.startListening()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(theme.pain)
+                .padding(.top, 16)
+            }
 
             Spacer(minLength: 24)
         }
@@ -257,18 +267,33 @@ private struct TalkWaveBar: View {
 private struct LiveTranscriptCard: View {
     let transcript: String
     let isListening: Bool
+    var errorMessage: String?
 
     @Environment(\.theme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var statusLabel: String {
+        if errorMessage != nil {
+            return "Couldn't listen"
+        }
+        return isListening ? "Listening" : "Paused"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(isListening ? "Listening" : "Paused")
+            Text(statusLabel)
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(theme.pain)
+                .foregroundStyle(errorMessage == nil ? theme.pain : theme.muted)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(theme.painDim, in: Capsule())
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             HStack(alignment: .lastTextBaseline, spacing: 0) {
                 Text(displayText)

@@ -6,11 +6,47 @@ enum SpeechCaptureError: Error, Equatable {
     case unavailable
     case notAuthorized
     case onDeviceRecognitionUnavailable
+    case localeUnsupported
+    case audioEngineFailure
+
+    var userMessage: String {
+        switch self {
+        case .unavailable:
+            return "Speech recognition isn't available on this device."
+        case .notAuthorized:
+            return "Microphone or speech recognition access is off."
+        case .onDeviceRecognitionUnavailable:
+            return "On-device dictation for your language isn't ready. Open Settings → General → Keyboard and turn on Dictation, then try again."
+        case .localeUnsupported:
+            return "Speech recognition isn't available for your language on this device."
+        case .audioEngineFailure:
+            return "Couldn't start the microphone. Close other apps using audio and try again."
+        }
+    }
+}
+
+/// Forwards PCM buffers to the active recognition request on the realtime audio thread.
+private final class AudioBufferSink: @unchecked Sendable {
+    private let lock = NSLock()
+    private weak var request: SFSpeechAudioBufferRecognitionRequest?
+
+    func setRequest(_ request: SFSpeechAudioBufferRecognitionRequest?) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.request = request
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock()
+        defer { lock.unlock() }
+        request?.append(buffer)
+    }
 }
 
 /// On-device `SFSpeechRecognizer` capture — audio never leaves the device.
 actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
     private let audioEngine = AVAudioEngine()
+    private let audioSink = AudioBufferSink()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer: SFSpeechRecognizer?
@@ -68,25 +104,25 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    try await self.runRecognition(continuation: continuation)
+                    try await self.runSession(continuation: continuation)
                 } catch {
                     continuation.finish(throwing: error)
                 }
             }
             continuation.onTermination = { _ in
                 task.cancel()
-                Task { await self.tearDownRecognition() }
+                Task { await self.tearDownSession() }
             }
         }
     }
 
     func stopTranscription() async {
-        await tearDownRecognition()
+        await tearDownSession()
     }
 
-    private func runRecognition(continuation: AsyncThrowingStream<String, Error>.Continuation) async throws {
+    private func runSession(continuation: AsyncThrowingStream<String, Error>.Continuation) async throws {
         guard let speechRecognizer, speechRecognizer.isAvailable else {
-            throw SpeechCaptureError.unavailable
+            throw SpeechCaptureError.localeUnsupported
         }
         guard authorizationStatus() == .authorized else {
             throw SpeechCaptureError.notAuthorized
@@ -95,47 +131,113 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
             throw SpeechCaptureError.onDeviceRecognitionUnavailable
         }
 
-        await tearDownRecognition()
+        await tearDownSession()
+        try configureAudioSession()
+        try startAudioCapture()
 
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        request.requiresOnDeviceRecognition = true
-        recognitionRequest = request
+        var latestText = ""
+        while !Task.isCancelled {
+            try beginRecognitionRequest()
 
+            let segmentText = try await waitForRecognitionSegment(
+                continuation: continuation,
+                accumulated: latestText
+            )
+            guard !Task.isCancelled else { break }
+
+            if !segmentText.isEmpty {
+                latestText = Self.append(segmentText, to: latestText)
+                continuation.yield(latestText)
+            }
+        }
+
+        continuation.finish()
+        await tearDownSession()
+    }
+
+    private func configureAudioSession() throws {
         let audioSession = AVAudioSession.sharedInstance()
         try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+    }
+
+    private func startAudioCapture() throws {
+        audioEngine.reset()
 
         let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            request.append(buffer)
+
+        let format = inputNode.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            throw SpeechCaptureError.audioEngineFailure
+        }
+
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [audioSink] buffer, _ in
+            audioSink.append(buffer)
         }
 
         audioEngine.prepare()
-        try audioEngine.start()
-
-        recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
-            if let result {
-                continuation.yield(result.bestTranscription.formattedString)
-                if result.isFinal {
-                    continuation.finish()
-                    Task { await self.tearDownRecognition() }
-                }
-            }
-            if let error {
-                continuation.finish(throwing: error)
-                Task { await self.tearDownRecognition() }
-            }
+        do {
+            try audioEngine.start()
+        } catch {
+            throw SpeechCaptureError.audioEngineFailure
         }
     }
 
-    private func tearDownRecognition() async {
+    private func beginRecognitionRequest() throws {
         recognitionTask?.cancel()
         recognitionTask = nil
         recognitionRequest?.endAudio()
         recognitionRequest = nil
+
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        request.requiresOnDeviceRecognition = true
+        request.addsPunctuation = false
+        recognitionRequest = request
+        audioSink.setRequest(request)
+    }
+
+    private func waitForRecognitionSegment(
+        continuation: AsyncThrowingStream<String, Error>.Continuation,
+        accumulated: String
+    ) async throws -> String {
+        guard let speechRecognizer, let request = recognitionRequest else {
+            throw SpeechCaptureError.unavailable
+        }
+
+        return try await withCheckedThrowingContinuation { segmentContinuation in
+            var finished = false
+            recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
+                if let result {
+                    let segment = result.bestTranscription.formattedString
+                    let liveText = Self.liveDisplay(segment: segment, accumulated: accumulated)
+                    continuation.yield(liveText)
+
+                    if result.isFinal, !finished {
+                        finished = true
+                        segmentContinuation.resume(returning: segment)
+                    }
+                }
+                if let error, !finished {
+                    if Self.isBenignRecognitionError(error) {
+                        finished = true
+                        segmentContinuation.resume(returning: "")
+                        return
+                    }
+                    finished = true
+                    segmentContinuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func tearDownSession() async {
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        audioSink.setRequest(nil)
 
         if audioEngine.isRunning {
             audioEngine.stop()
@@ -143,5 +245,35 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         audioEngine.inputNode.removeTap(onBus: 0)
 
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private static func isBenignRecognitionError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == "kAFAssistantErrorDomain" {
+            switch nsError.code {
+            case 1110, 209, 216, 301:
+                return true
+            default:
+                break
+            }
+        }
+        if nsError.domain == "kLSRErrorDomain", nsError.code == 301 {
+            return true
+        }
+        return false
+    }
+
+    private static func append(_ segment: String, to existing: String) -> String {
+        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSegment.isEmpty else { return existing }
+        let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedExisting.isEmpty else { return trimmedSegment }
+        return "\(trimmedExisting) \(trimmedSegment)"
+    }
+
+    private static func liveDisplay(segment: String, accumulated: String) -> String {
+        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSegment.isEmpty else { return accumulated }
+        return append(trimmedSegment, to: accumulated)
     }
 }

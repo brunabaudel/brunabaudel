@@ -9,6 +9,7 @@ final class SpeechCapture {
     private(set) var authorizationStatus: SpeechAuthStatus = .unavailable
     private(set) var transcript: String = ""
     private(set) var isListening: Bool = false
+    private(set) var listeningError: String?
 
     private let provider: any SpeechRecognizerProviding
     private var listeningTask: Task<Void, Never>?
@@ -49,24 +50,24 @@ final class SpeechCapture {
         stopListening()
 
         transcript = ""
+        listeningError = nil
         isListening = true
 
         let provider = provider
-        listeningTask = Task.detached { [weak self] in
+        listeningTask = Task {
             do {
                 let stream = await provider.startTranscription()
                 for try await partial in stream {
                     guard !Task.isCancelled else { break }
-                    await MainActor.run {
-                        self?.transcript = partial
-                    }
+                    applyPartialTranscript(partial)
                 }
+            } catch is CancellationError {
+                return
             } catch {
                 guard !Task.isCancelled else { return }
+                applyListeningError(Self.userMessage(for: error))
             }
-            await MainActor.run {
-                self?.isListening = false
-            }
+            isListening = false
         }
     }
 
@@ -74,10 +75,28 @@ final class SpeechCapture {
         listeningTask?.cancel()
         listeningTask = nil
         isListening = false
+        let provider = provider
         Task { await provider.stopTranscription() }
     }
 
     func resetTranscript() {
         transcript = ""
+        listeningError = nil
+    }
+
+    private func applyPartialTranscript(_ partial: String) {
+        transcript = partial
+        listeningError = nil
+    }
+
+    private func applyListeningError(_ message: String) {
+        listeningError = message
+    }
+
+    private static func userMessage(for error: Error) -> String {
+        if let captureError = error as? SpeechCaptureError {
+            return captureError.userMessage
+        }
+        return "Couldn't capture speech. Try again or use Tap instead."
     }
 }
