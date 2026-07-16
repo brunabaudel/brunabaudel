@@ -208,9 +208,11 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
 
         return try await withCheckedThrowingContinuation { segmentContinuation in
             var finished = false
+            var lastPartialSegment = ""
             recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
                 if let result {
                     let segment = result.bestTranscription.formattedString
+                    lastPartialSegment = segment
                     let liveText = Self.liveDisplay(segment: segment, accumulated: accumulated)
                     continuation.yield(liveText)
 
@@ -222,7 +224,9 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
                 if let error, !finished {
                     if Self.isBenignRecognitionError(error) {
                         finished = true
-                        segmentContinuation.resume(returning: "")
+                        // Pauses often end with a benign error instead of isFinal — keep
+                        // the last partial so the next utterance appends, not replaces.
+                        segmentContinuation.resume(returning: lastPartialSegment)
                         return
                     }
                     finished = true
@@ -263,15 +267,18 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         return false
     }
 
-    private static func append(_ segment: String, to existing: String) -> String {
+    static func append(_ segment: String, to existing: String) -> String {
         let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSegment.isEmpty else { return existing }
         let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedExisting.isEmpty else { return trimmedSegment }
+        if trimmedExisting == trimmedSegment || trimmedExisting.hasSuffix(" \(trimmedSegment)") {
+            return trimmedExisting
+        }
         return "\(trimmedExisting) \(trimmedSegment)"
     }
 
-    private static func liveDisplay(segment: String, accumulated: String) -> String {
+    static func liveDisplay(segment: String, accumulated: String) -> String {
         let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedSegment.isEmpty else { return accumulated }
         return append(trimmedSegment, to: accumulated)
