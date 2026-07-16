@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Voice capture surface — dim, near-empty, breathing orb, live transcript.
-/// Transcription only (Phase 5); classification lands in Phase 6.
+/// Transcription only; classification runs on the Confirm screen (Phase 6).
 struct TalkView: View {
     let schema: SchemaConfig
     var onFinish: (String) -> Void

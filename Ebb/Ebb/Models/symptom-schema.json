@@ -30,7 +30,7 @@
         { "key": "right",      "label": "Right side",       "synonyms": ["right", "right-sided", "r side"] },
         { "key": "left",       "label": "Left side",        "synonyms": ["left", "left-sided"] },
         { "key": "bilateral",  "label": "Both sides",       "synonyms": ["both sides", "all over", "whole head", "everywhere"] },
-        { "key": "behind_eye", "label": "Behind the eye",   "synonyms": ["behind eye", "behind my eye", "eye socket", "around the eye"] },
+        { "key": "behind_eye", "label": "Behind the eye",   "synonyms": ["behind eye", "behind my eye", "behind my left eye", "behind my right eye", "eye socket", "around the eye"] },
         { "key": "temple",     "label": "Temple",           "synonyms": ["temple", "side of the head"] },
         { "key": "forehead",   "label": "Forehead",         "synonyms": ["forehead", "front of head"] },
         { "key": "jaw",        "label": "Jaw / teeth",      "synonyms": ["jaw", "teeth", "mandible", "mandíbula"] },
@@ -84,7 +84,7 @@
       "label": "Possible triggers",
       "type": "multi_enum",
       "values": [
-        { "key": "poor_sleep",      "label": "Poor sleep",            "synonyms": ["bad sleep", "slept badly", "didn't sleep", "little sleep"] },
+        { "key": "poor_sleep",      "label": "Poor sleep",            "synonyms": ["bad sleep", "slept badly", "didn't sleep", "little sleep", "dormi mal", "slept poorly"] },
         { "key": "skipped_meal",    "label": "Skipped meal",          "synonyms": ["skipped a meal", "didn't eat", "hungry", "low blood sugar"] },
         { "key": "stress",          "label": "Stress",                "synonyms": ["stress", "stressed", "anxious"] },
         { "key": "stress_letdown",  "label": "Stress let-down",       "synonyms": ["after a stressful week", "let down", "weekend crash"] },
@@ -102,7 +102,7 @@
       "values": [
         { "key": "none",     "label": "None",     "synonyms": ["no period", "not bleeding"] },
         { "key": "spotting", "label": "Spotting", "synonyms": ["spotting", "just a little"] },
-        { "key": "light",    "label": "Light",    "synonyms": ["light"] },
+        { "key": "light",    "label": "Light",    "synonyms": ["light flow", "light bleeding", "light period"] },
         { "key": "medium",   "label": "Medium",   "synonyms": ["medium", "normal", "regular"] },
         { "key": "heavy",    "label": "Heavy",    "synonyms": ["heavy", "soaking", "a lot"] }
       ]
@@ -119,7 +119,7 @@
       "label": "Medication / relief",
       "type": "multi_enum",
       "values": [
-        { "key": "ibuprofen",      "label": "Ibuprofen",        "synonyms": ["ibuprofen", "brufen", "advil"] },
+        { "key": "ibuprofen",      "label": "Ibuprofen",        "synonyms": ["ibuprofen", "ibuprofeno", "brufen", "advil"] },
         { "key": "naproxen",       "label": "Naproxen",         "synonyms": ["naproxen", "aleve"] },
         { "key": "paracetamol",    "label": "Paracetamol",      "synonyms": ["paracetamol", "acetaminophen", "tylenol"] },
         { "key": "triptan",        "label": "Triptan",          "synonyms": ["triptan", "sumatriptan", "imitrex"] },
@@ -134,9 +134,9 @@
       "type": "enum",
       "appliesWhen": "relief_taken not empty",
       "values": [
-        { "key": "none",    "label": "No relief" },
-        { "key": "partial", "label": "Some relief" },
-        { "key": "full",    "label": "Full relief" }
+        { "key": "none",    "label": "No relief",    "synonyms": ["no relief", "didn't help", "did not help"] },
+        { "key": "partial", "label": "Some relief",  "synonyms": ["some relief", "a little", "a bit", "helped a little", "ajudou um pouco"] },
+        { "key": "full",    "label": "Full relief",  "synonyms": ["full relief", "helped completely", "went away", "all gone"] }
       ]
     }
   ],
