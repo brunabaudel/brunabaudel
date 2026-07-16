@@ -21,20 +21,18 @@ struct CalendarView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        header
-                        overviewChips
-                        displayModeToggle
-                        gridSection
-                        legend
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    overviewChips
+                    displayModeToggle
+                    gridSection
+                    legend
+                    dayDetail
                 }
-                dayDetail
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
             }
             .background(theme.base)
             .foregroundStyle(theme.text)
@@ -441,8 +439,7 @@ struct CalendarView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(theme.line, lineWidth: 1)
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 12)
+        .padding(.top, 14)
     }
 
     // MARK: - Styling helpers
