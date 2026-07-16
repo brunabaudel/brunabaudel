@@ -59,7 +59,18 @@ struct SpeechCaptureTests {
 
         let capture = SpeechCapture(provider: HeartbeatRecognizer())
         capture.startListening()
-        try? await Task.sleep(for: .milliseconds(200))
+
+        for _ in 0 ..< 50 {
+            if capture.transcript == "hello" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(capture.transcript == "hello")
+
+        for _ in 0 ..< 50 {
+            if capture.transcript == "hello world" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+
         capture.stopListening()
         #expect(capture.transcript == "hello world")
     }
