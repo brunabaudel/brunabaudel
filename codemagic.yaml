@@ -1,0 +1,53 @@
+workflows:
+  ios-adhoc-device:
+    name: Ebb — Ad Hoc (install on device)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: codemagic
+
+    environment:
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.bcbs.ebb
+
+      vars:
+        XCODE_SCHEME: Ebb
+        XCODE_PROJECT: Ebb/Ebb.xcodeproj
+
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: app/ebb
+          include: true
+
+    scripts:
+      - name: Set build number
+        script: |
+          cd "$CM_BUILD_DIR/Ebb"
+          agvtool new-version -all "$BUILD_NUMBER"
+
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - brubaudel@gmail.com
+        notify:
+          success: true
+          failure: true
