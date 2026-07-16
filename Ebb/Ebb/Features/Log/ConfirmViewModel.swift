@@ -8,7 +8,8 @@ final class ConfirmViewModel {
     let transcript: String
     let schema: SchemaConfig
 
-    private(set) var values: [String: FieldValue] = [:]
+    /// Editable field values — user can fix AI pre-fills before saving.
+    var values: [String: FieldValue] = [:]
     private(set) var aiHighlights: [String: Set<String>] = [:]
     private(set) var isClassifying = true
     private(set) var classificationFailed = false
