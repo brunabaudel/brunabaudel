@@ -131,9 +131,7 @@ private struct TranscriptMatcher {
 
     private func enumCandidates(for field: SchemaField) -> [(phrase: String, valueKey: String)] {
         field.values.flatMap { option in
-            var phrases = option.synonyms.map { $0.lowercased() }
-            phrases.append(option.label.lowercased())
-            phrases.append(option.key.replacingOccurrences(of: "_", with: " "))
+            let phrases = option.synonyms.map { $0.lowercased() }
             return phrases.map { (phrase: $0, valueKey: option.key) }
         }
     }

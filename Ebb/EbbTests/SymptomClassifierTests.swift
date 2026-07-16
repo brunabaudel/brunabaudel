@@ -107,7 +107,10 @@ struct ClassificationJSONParserTests {
             """,
             schema: schema
         )
-        #expect(result == ["bleeding": .choice("heavy")])
+        #expect(result == [
+            "bleeding": .choice("heavy"),
+            "location": .choices(["right"]),
+        ])
     }
 }
 

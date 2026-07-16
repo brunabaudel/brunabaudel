@@ -119,7 +119,7 @@
       "label": "Medication / relief",
       "type": "multi_enum",
       "values": [
-        { "key": "ibuprofen",      "label": "Ibuprofen",        "synonyms": ["ibuprofen", "brufen", "advil"] },
+        { "key": "ibuprofen",      "label": "Ibuprofen",        "synonyms": ["ibuprofen", "ibuprofeno", "brufen", "advil"] },
         { "key": "naproxen",       "label": "Naproxen",         "synonyms": ["naproxen", "aleve"] },
         { "key": "paracetamol",    "label": "Paracetamol",      "synonyms": ["paracetamol", "acetaminophen", "tylenol"] },
         { "key": "triptan",        "label": "Triptan",          "synonyms": ["triptan", "sumatriptan", "imitrex"] },
