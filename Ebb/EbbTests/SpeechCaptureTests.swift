@@ -41,6 +41,7 @@ struct SpeechCaptureTests {
         struct HeartbeatRecognizer: SpeechRecognizerProviding {
             var isAvailable: Bool { true }
             func authorizationStatus() -> SpeechAuthStatus { .authorized }
+            func requestAuthorization() async throws {}
             func startTranscription() async -> AsyncThrowingStream<String, Error> {
                 AsyncThrowingStream { continuation in
                     Task {
