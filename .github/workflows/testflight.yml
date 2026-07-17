@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - app/ebb
-      - main
     paths:
       - "Ebb/**"
       - ".github/workflows/testflight.yml"

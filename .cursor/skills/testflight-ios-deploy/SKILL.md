@@ -125,7 +125,7 @@ Spaceship::ConnectAPI.post_beta_tester_assignment(
 - Testers get one TestFlight email invite; after accepting, new builds appear
   automatically (internal group). Add testers by appending to the `TESTERS`
   array in `Ebb/ci/create_beta_group.rb`.
-- The workflow triggers on push to `app/ebb`/`main` touching `Ebb/**` or the
+- The workflow triggers on push to `app/ebb` touching `Ebb/**` or the
   workflow file, plus `workflow_dispatch`. Pushes run **Capture screenshots**
   and **Deploy to TestFlight** in parallel. Manual runs expose two booleans:
   `capture_screenshots` and `deploy_testflight` (screenshots-only ~5 min,

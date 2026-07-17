@@ -84,6 +84,7 @@ struct ConfirmView: View {
             Text(viewModel.transcript)
                 .font(.subheadline.monospaced())
                 .foregroundStyle(theme.text)
+                .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(12)

@@ -107,18 +107,18 @@ struct SpeechCaptureTests {
 
 @Suite("Transcript assembly")
 struct TranscriptAssemblyTests {
-    @Test func appendJoinsSegmentsWithSpace() {
-        #expect(OnDeviceSpeechRecognizer.append("world", to: "hello") == "hello world")
+    @Test func appendJoinsSegmentsWithLineBreak() {
+        #expect(TranscriptFormatting.appendFinalizedSegment("world", to: "hello") == "hello\nworld")
     }
 
     @Test func appendSkipsDuplicateSuffix() {
-        #expect(OnDeviceSpeechRecognizer.append("world", to: "hello world") == "hello world")
+        #expect(TranscriptFormatting.appendFinalizedSegment("world", to: "hello\nworld") == "hello\nworld")
     }
 
     @Test func liveDisplayCombinesAccumulatedAndPartial() {
         #expect(
-            OnDeviceSpeechRecognizer.liveDisplay(segment: "on the right", accumulated: "dull one")
-                == "dull one on the right"
+            TranscriptFormatting.liveDisplay(segment: "on the right", accumulated: "dull one")
+                == "dull one\non the right"
         )
     }
 }

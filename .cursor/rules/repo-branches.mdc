@@ -1,0 +1,29 @@
+---
+description: Branch policy — main is GitHub profile README only; all Ebb app work lives on app/ebb.
+alwaysApply: true
+---
+
+# Repository branch policy
+
+This repo (`brunabaudel/brunabaudel`) is a **GitHub profile repository**. Treat the branches differently:
+
+## `main` — profile README only
+
+- **Must contain only `README.md`.** Nothing else.
+- Never merge app code, CI workflows, docs, or Cursor skills into `main`.
+- Never open PRs that target `main` for Ebb/iOS work.
+- If `main` accidentally gets app files, revert or reset it back to README-only immediately.
+
+## `app/ebb` — Ebb iOS app
+
+- **All app code, tests, CI, and docs live here** (`Ebb/`, `.github/workflows/testflight.yml`, etc.).
+- Branch feature work from `app/ebb` (e.g. `cursor/my-feature-b72e`).
+- Open PRs **into `app/ebb`**, not `main`.
+- TestFlight deploys run from pushes to `app/ebb`.
+
+## Agent checklist
+
+1. Confirm which branch you are on before editing.
+2. App changes → branch off `app/ebb`, PR base = `app/ebb`.
+3. Profile README tweaks only → `main`, and only touch `README.md`.
+4. Never merge an app PR into `main`.
