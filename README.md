@@ -8,6 +8,8 @@
 
 <img src="https://github.com/brunabaudel/brunabaudel.github.io/blob/master/src/resources/logo-b.png" width='25'/><a href="https://brunabaudel.com">brunabaudel.com</a>
 
+> **Note:** This repo’s `main` branch is my GitHub profile README only. The **Ebb** iOS app lives on the [`app/ebb`](https://github.com/brunabaudel/brunabaudel/tree/app/ebb) branch.
+
 <!--
 
 ### 🎧 Now on Spotify
