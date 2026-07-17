@@ -146,7 +146,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
             guard !Task.isCancelled else { break }
 
             if !segmentText.isEmpty {
-                latestText = Self.append(segmentText, to: latestText)
+                latestText = TranscriptFormatting.appendFinalizedSegment(segmentText, to: latestText)
                 continuation.yield(latestText)
             }
         }
@@ -211,7 +211,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
             recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
                 if let result {
                     let segment = result.bestTranscription.formattedString
-                    let liveText = Self.liveDisplay(segment: segment, accumulated: accumulated)
+                    let liveText = TranscriptFormatting.liveDisplay(segment: segment, accumulated: accumulated)
                     continuation.yield(liveText)
 
                     if result.isFinal, !finished {
@@ -263,17 +263,4 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
         return false
     }
 
-    private static func append(_ segment: String, to existing: String) -> String {
-        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSegment.isEmpty else { return existing }
-        let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedExisting.isEmpty else { return trimmedSegment }
-        return "\(trimmedExisting) \(trimmedSegment)"
-    }
-
-    private static func liveDisplay(segment: String, accumulated: String) -> String {
-        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSegment.isEmpty else { return accumulated }
-        return append(trimmedSegment, to: accumulated)
-    }
 }
