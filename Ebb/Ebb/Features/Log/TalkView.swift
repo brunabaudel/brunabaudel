@@ -299,6 +299,7 @@ private struct LiveTranscriptCard: View {
                 Text(displayText)
                     .font(.body.monospaced())
                     .foregroundStyle(theme.text)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
 

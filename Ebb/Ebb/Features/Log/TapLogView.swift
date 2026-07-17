@@ -84,6 +84,7 @@ struct TapLogView: View {
             Text(note)
                 .font(.subheadline)
                 .foregroundStyle(theme.text)
+                .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(12)

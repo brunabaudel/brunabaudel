@@ -146,7 +146,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
             guard !Task.isCancelled else { break }
 
             if !segmentText.isEmpty {
-                latestText = Self.append(segmentText, to: latestText)
+                latestText = TranscriptFormatting.appendFinalizedSegment(segmentText, to: latestText)
                 continuation.yield(latestText)
             }
         }
@@ -213,7 +213,7 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
                 if let result {
                     let segment = result.bestTranscription.formattedString
                     lastPartialSegment = segment
-                    let liveText = Self.liveDisplay(segment: segment, accumulated: accumulated)
+                    let liveText = TranscriptFormatting.liveDisplay(segment: segment, accumulated: accumulated)
                     continuation.yield(liveText)
 
                     if result.isFinal, !finished {
@@ -265,22 +265,5 @@ actor OnDeviceSpeechRecognizer: SpeechRecognizerProviding {
             return true
         }
         return false
-    }
-
-    static func append(_ segment: String, to existing: String) -> String {
-        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSegment.isEmpty else { return existing }
-        let trimmedExisting = existing.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedExisting.isEmpty else { return trimmedSegment }
-        if trimmedExisting == trimmedSegment || trimmedExisting.hasSuffix(" \(trimmedSegment)") {
-            return trimmedExisting
-        }
-        return "\(trimmedExisting) \(trimmedSegment)"
-    }
-
-    static func liveDisplay(segment: String, accumulated: String) -> String {
-        let trimmedSegment = segment.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedSegment.isEmpty else { return accumulated }
-        return append(trimmedSegment, to: accumulated)
     }
 }
