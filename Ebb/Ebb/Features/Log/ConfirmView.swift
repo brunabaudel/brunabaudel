@@ -81,7 +81,7 @@ struct ConfirmView: View {
     private var transcriptSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             SectionHeader(title: "You said")
-            Text(viewModel.transcript)
+            Text(TranscriptFormatting.forDisplay(viewModel.transcript))
                 .font(.subheadline.monospaced())
                 .foregroundStyle(theme.text)
                 .multilineTextAlignment(.leading)
