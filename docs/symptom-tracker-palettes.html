@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Symptom Tracker — Palette Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0E0B12;color:#EDE6F0;font-family:"Figtree",system-ui,sans-serif;line-height:1.45;padding:54px 26px 90px;-webkit-font-smoothing:antialiased;}
+
+  .head{max-width:1200px;margin:0 auto 42px;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#9D8FC7;margin-bottom:16px;}
+  .head h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.01em;}
+  .head h1 em{font-style:italic;color:#E89B8B;}
+  .head p{color:#A99FB0;max-width:64ch;margin-top:18px;font-size:16px;}
+  .axes{display:flex;gap:22px;margin-top:20px;flex-wrap:wrap;font-size:13px;color:#A99FB0;}
+  .axes span{display:flex;align-items:center;gap:8px;}
+  .axes i{width:13px;height:13px;border-radius:50%;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:26px;max-width:1200px;margin:0 auto;}
+
+  .pal{background:#16131B;border:1px solid #2a2530;border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:18px;}
+  .pal-head h3{font-family:"Fraunces",serif;font-size:21px;color:#EDE6F0;}
+  .pal-head h3 .tag{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:3px 7px;border-radius:6px;margin-left:9px;vertical-align:3px;color:var(--pain);border:1px solid var(--pain);}
+  .pal-head p{color:#A99FB0;font-size:12.5px;margin-top:6px;line-height:1.5;}
+
+  .swatches{display:flex;flex-wrap:wrap;gap:11px 16px;}
+  .sw{display:inline-flex;align-items:center;gap:7px;}
+  .sw i{width:17px;height:17px;border-radius:5px;border:1px solid #ffffff1c;flex:0 0 auto;}
+  .sw .meta{display:flex;flex-direction:column;line-height:1.25;}
+  .sw b{color:#D9D2E0;font-weight:500;font-size:11px;}
+  .sw code{font-family:"JetBrains Mono",monospace;color:#776E80;font-size:9.5px;}
+
+  /* applied preview — uses the palette vars */
+  .pv{background:var(--base);border:1px solid var(--line);border-radius:18px;padding:16px;color:var(--text);}
+  .pv-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .pv-greet{font-family:"Fraunces",serif;font-size:16px;}
+  .pv-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .pv-phase{font-size:10px;font-weight:600;color:var(--cycle);background:var(--cycdim);border:1px solid var(--cycle);padding:4px 9px;border-radius:999px;white-space:nowrap;}
+  .pv-mid{display:flex;gap:13px;align-items:center;margin:15px 0;}
+  .pv-ring{position:relative;width:64px;height:64px;flex:0 0 auto;}
+  .pv-ring svg{transform:rotate(-90deg);}
+  .pv-ring .d{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:"Fraunces",serif;font-size:20px;color:var(--text);}
+  .pv-insight{font-family:"Fraunces",serif;font-size:14px;line-height:1.38;}
+  .pv-insight b{color:var(--pain);font-weight:500;}
+  .pv-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .pv-pill{font-size:11px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
+  .pv-pill.auto{color:var(--pain);background:var(--paindim);border-color:var(--pain);font-weight:600;}
+  .pv-cta{background:var(--pain);color:var(--onpain);text-align:center;padding:11px;border-radius:13px;font-weight:700;font-size:13px;}
+</style>
+</head>
+<body>
+
+  <header class="head">
+    <div class="kicker">Palette Options · 6 directions</div>
+    <h1>Six ways to dress the same <em>calm, dim-first</em> app.</h1>
+    <p>Every option keeps the rules that matter for this product: a low-luminance base, soft off-white (never pure white) text, and the two-accent system where color encodes meaning. Each is shown applied to a real slice — phase pill, cycle ring, insight line, an auto-filled pill, and the save button — so you can feel it, not just read hexes.</p>
+    <div class="axes">
+      <span><i style="background:#E89B8B"></i>Warm accent always = pain / symptom</span>
+      <span><i style="background:#9D8FC7"></i>Cool accent always = cycle / hormone</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- P1 -->
+    <div class="pal" style="--base:#1A1620;--surface:#241E2C;--line:#3A3242;--text:#EDE6F0;--muted:#A99FB0;--pain:#E89B8B;--paindim:#2E2229;--cycle:#9D8FC7;--cycdim:#241F33;--ok:#8FB1A0;--onpain:#2A1714;">
+      <div class="pal-head"><h3>Plum &amp; Ember<span class="tag">current</span></h3><p>Warm plum night with a coral ember and lavender cycle. Tender, a little nocturnal — the baseline you’ve been seeing.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#1A1620"></i><span class="meta"><b>Base</b><code>#1A1620</code></span></span>
+        <span class="sw"><i style="background:#241E2C"></i><span class="meta"><b>Surface</b><code>#241E2C</code></span></span>
+        <span class="sw"><i style="background:#EDE6F0"></i><span class="meta"><b>Text</b><code>#EDE6F0</code></span></span>
+        <span class="sw"><i style="background:#E89B8B"></i><span class="meta"><b>Pain</b><code>#E89B8B</code></span></span>
+        <span class="sw"><i style="background:#9D8FC7"></i><span class="meta"><b>Cycle</b><code>#9D8FC7</code></span></span>
+        <span class="sw"><i style="background:#8FB1A0"></i><span class="meta"><b>Confirm</b><code>#8FB1A0</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Evening, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+    <!-- P2 -->
+    <div class="pal" style="--base:#0F1E1C;--surface:#173029;--line:#294B42;--text:#E4EFEA;--muted:#92AAA1;--pain:#E8B07A;--paindim:#2E2415;--cycle:#82B6C9;--cycdim:#16302F;--ok:#8FB1A0;--onpain:#2E2113;">
+      <div class="pal-head"><h3>Tidewater</h3><p>Deep teal water with a warm apricot and a soft sky-blue cycle. Reads health-and-calm, faintly clinical without the cold.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#0F1E1C"></i><span class="meta"><b>Base</b><code>#0F1E1C</code></span></span>
+        <span class="sw"><i style="background:#173029"></i><span class="meta"><b>Surface</b><code>#173029</code></span></span>
+        <span class="sw"><i style="background:#E4EFEA"></i><span class="meta"><b>Text</b><code>#E4EFEA</code></span></span>
+        <span class="sw"><i style="background:#E8B07A"></i><span class="meta"><b>Pain</b><code>#E8B07A</code></span></span>
+        <span class="sw"><i style="background:#82B6C9"></i><span class="meta"><b>Cycle</b><code>#82B6C9</code></span></span>
+        <span class="sw"><i style="background:#8FB1A0"></i><span class="meta"><b>Confirm</b><code>#8FB1A0</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Evening, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+    <!-- P3 -->
+    <div class="pal" style="--base:#15131F;--surface:#201D30;--line:#332E47;--text:#E9E6F2;--muted:#A39EB8;--pain:#E29AAD;--paindim:#321F27;--cycle:#8593D4;--cycdim:#1F2440;--ok:#93B7A6;--onpain:#2C1820;">
+      <div class="pal-head"><h3>Nocturne</h3><p>Indigo midnight with a blush rose and periwinkle. The most “night-logging” option — dreamy, feminine without leaning pink.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#15131F"></i><span class="meta"><b>Base</b><code>#15131F</code></span></span>
+        <span class="sw"><i style="background:#201D30"></i><span class="meta"><b>Surface</b><code>#201D30</code></span></span>
+        <span class="sw"><i style="background:#E9E6F2"></i><span class="meta"><b>Text</b><code>#E9E6F2</code></span></span>
+        <span class="sw"><i style="background:#E29AAD"></i><span class="meta"><b>Pain</b><code>#E29AAD</code></span></span>
+        <span class="sw"><i style="background:#8593D4"></i><span class="meta"><b>Cycle</b><code>#8593D4</code></span></span>
+        <span class="sw"><i style="background:#93B7A6"></i><span class="meta"><b>Confirm</b><code>#93B7A6</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Evening, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+    <!-- P4 -->
+    <div class="pal" style="--base:#16151A;--surface:#201F26;--line:#322F39;--text:#EAE8EE;--muted:#9E9AA6;--pain:#D98A86;--paindim:#321E1D;--cycle:#9DB89E;--cycdim:#1E2A20;--ok:#88B0A8;--onpain:#2C1817;">
+      <div class="pal-head"><h3>Ash &amp; Sage</h3><p>Neutral warm charcoal with a muted clay-rose and sage. The quietest, least-stimulating option — and the most gender-neutral.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#16151A"></i><span class="meta"><b>Base</b><code>#16151A</code></span></span>
+        <span class="sw"><i style="background:#201F26"></i><span class="meta"><b>Surface</b><code>#201F26</code></span></span>
+        <span class="sw"><i style="background:#EAE8EE"></i><span class="meta"><b>Text</b><code>#EAE8EE</code></span></span>
+        <span class="sw"><i style="background:#D98A86"></i><span class="meta"><b>Pain</b><code>#D98A86</code></span></span>
+        <span class="sw"><i style="background:#9DB89E"></i><span class="meta"><b>Cycle</b><code>#9DB89E</code></span></span>
+        <span class="sw"><i style="background:#88B0A8"></i><span class="meta"><b>Confirm</b><code>#88B0A8</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Evening, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+    <!-- P5 -->
+    <div class="pal" style="--base:#EFE8DD;--surface:#F8F3EC;--line:#DCD2C4;--text:#3B332C;--muted:#8A8074;--pain:#C2607A;--paindim:#F0DCE2;--cycle:#5E8C84;--cycdim:#DCE7E3;--ok:#6E9E8E;--onpain:#FBF6F2;">
+      <div class="pal-head"><h3>Oat &amp; Rose<span class="tag">light</span></h3><p>A calm paper-light option (not the usual cream-and-terracotta): warm oat, dusty rose, muted teal. Soft, daytime, gentle.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#EFE8DD"></i><span class="meta"><b>Base</b><code>#EFE8DD</code></span></span>
+        <span class="sw"><i style="background:#F8F3EC"></i><span class="meta"><b>Surface</b><code>#F8F3EC</code></span></span>
+        <span class="sw"><i style="background:#3B332C"></i><span class="meta"><b>Text</b><code>#3B332C</code></span></span>
+        <span class="sw"><i style="background:#C2607A"></i><span class="meta"><b>Pain</b><code>#C2607A</code></span></span>
+        <span class="sw"><i style="background:#5E8C84"></i><span class="meta"><b>Cycle</b><code>#5E8C84</code></span></span>
+        <span class="sw"><i style="background:#6E9E8E"></i><span class="meta"><b>Confirm</b><code>#6E9E8E</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Morning, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="#E4DACB" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+    <!-- P6 -->
+    <div class="pal" style="--base:#181511;--surface:#231F19;--line:#38322A;--text:#ECE5DA;--muted:#A79D8D;--pain:#DB8662;--paindim:#321D14;--cycle:#9DAE79;--cycdim:#232A18;--ok:#8FB39A;--onpain:#2C1812;">
+      <div class="pal-head"><h3>Moss &amp; Clay</h3><p>Warm earth-brown with burnt clay and a moss-green cycle. Grounded and botanical — leans into the “natural rhythm” framing.</p></div>
+      <div class="swatches">
+        <span class="sw"><i style="background:#181511"></i><span class="meta"><b>Base</b><code>#181511</code></span></span>
+        <span class="sw"><i style="background:#231F19"></i><span class="meta"><b>Surface</b><code>#231F19</code></span></span>
+        <span class="sw"><i style="background:#ECE5DA"></i><span class="meta"><b>Text</b><code>#ECE5DA</code></span></span>
+        <span class="sw"><i style="background:#DB8662"></i><span class="meta"><b>Pain</b><code>#DB8662</code></span></span>
+        <span class="sw"><i style="background:#9DAE79"></i><span class="meta"><b>Cycle</b><code>#9DAE79</code></span></span>
+        <span class="sw"><i style="background:#8FB39A"></i><span class="meta"><b>Confirm</b><code>#8FB39A</code></span></span>
+      </div>
+      <div class="pv">
+        <div class="pv-top"><div><div class="pv-greet">Evening, Bruna</div><div class="pv-sub">Luteal · day 24</div></div><span class="pv-phase">Luteal</span></div>
+        <div class="pv-mid"><div class="pv-ring"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--cycle)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="40"/></svg><div class="d">24</div></div><div class="pv-insight">Your <b>3rd right-side migraine</b> this cycle.</div></div>
+        <div class="pv-pills"><span class="pv-pill auto">Right</span><span class="pv-pill">Throbbing</span><span class="pv-pill">Jaw</span></div>
+        <div class="pv-cta">Save entry</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Symptom Tracker — Theme Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0E0B12;color:#EDE6F0;font-family:"Figtree",system-ui,sans-serif;line-height:1.45;padding:54px 26px 90px;-webkit-font-smoothing:antialiased;}
+
+  .head{max-width:1140px;margin:0 auto 46px;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#9D8FC7;margin-bottom:16px;}
+  .head h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(30px,5vw,50px);line-height:1.05;letter-spacing:-.01em;}
+  .head h1 em{font-style:italic;color:#E89B8B;}
+  .head p{color:#A99FB0;max-width:62ch;margin-top:18px;font-size:16px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,330px));gap:42px 36px;justify-content:center;max-width:1140px;margin:0 auto;}
+  .frame-wrap{display:flex;flex-direction:column;gap:14px;}
+  .scr-name{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#9D8FC7;padding-left:4px;}
+  .annot{font-size:13px;color:#776E80;padding-left:4px;max-width:330px;}
+  .annot b{color:#A99FB0;font-weight:600;}
+
+  .phone{width:330px;height:715px;border-radius:46px;background:var(--base);border:1px solid #312938;box-shadow:0 0 0 9px #16121b,0 30px 70px -30px #000;position:relative;overflow:hidden;}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:18px;z-index:40;}
+  .statusbar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:12.5px;font-weight:600;color:var(--text);z-index:30;}
+  .statusbar .dots{opacity:.8;font-size:11px;}
+  .screen{position:absolute;inset:0;padding:60px 22px 22px;display:flex;flex-direction:column;color:var(--text);}
+
+  .set-top{display:flex;align-items:center;justify-content:space-between;}
+  .set-top .back{font-size:22px;color:var(--muted);width:24px;}
+  .set-title{font-family:"Fraunces",serif;font-size:20px;font-weight:500;}
+  .set-sub{color:var(--muted);font-size:13px;margin-top:12px;line-height:1.5;}
+  .set-label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);opacity:.8;margin:22px 0 13px;}
+
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .ttile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:9px;display:flex;flex-direction:column;gap:9px;}
+  .ttile.sel{box-shadow:0 0 0 2px var(--pain);}
+  .t-band{background:var(--tbase);border:1px solid var(--tline);border-radius:11px;padding:9px 10px;height:66px;display:flex;flex-direction:column;justify-content:space-between;}
+  .t-band .row{display:flex;justify-content:space-between;align-items:center;}
+  .t-phase{font-size:8px;font-weight:700;color:var(--tcyc);border:1px solid var(--tcyc);border-radius:999px;padding:2px 6px;letter-spacing:.04em;}
+  .t-dots{display:flex;gap:4px;}
+  .t-dots i{width:9px;height:9px;border-radius:50%;}
+  .t-dots .dp{background:var(--tpain);}
+  .t-dots .dc{background:var(--tcyc);}
+  .t-aa{font-family:"Fraunces",serif;font-size:16px;color:var(--ttext);}
+  .t-name{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;font-weight:600;color:var(--text);padding:0 2px 1px;}
+  .check{width:17px;height:17px;border-radius:50%;background:var(--pain);color:var(--onpain);display:none;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+  .ttile.sel .check{display:flex;}
+</style>
+</head>
+<body>
+
+  <header class="head">
+    <div class="kicker">In-app · Settings → Appearance</div>
+    <h1>You liked all six — so let people <em>choose</em>.</h1>
+    <p>A theme picker in Settings. Selecting one re-skins the entire app, shown here across three picks. Each tile previews itself in its own colors; the chrome around it is already wearing the selected theme — so the screen is its own live preview.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- FRAME A · Plum selected (dark) -->
+    <div class="frame-wrap">
+      <div class="scr-name">Selected · Plum &amp; Ember</div>
+      <div class="phone" style="--base:#1A1620;--surface:#241E2C;--line:#3A3242;--text:#EDE6F0;--muted:#A99FB0;--pain:#E89B8B;--cycle:#9D8FC7;--onpain:#2A1714;">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:24</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+        <div class="screen">
+          <div class="set-top"><span class="back">‹</span><span class="set-title">Appearance</span><span style="width:24px"></span></div>
+          <p class="set-sub">Pick a theme — the whole app re-skins. Symptoms always stay warm, your cycle always stays cool.</p>
+          <div class="set-label">Theme</div>
+          <div class="theme-grid">
+            <div class="ttile sel" style="--tbase:#1A1620;--tsurface:#241E2C;--tline:#3A3242;--ttext:#EDE6F0;--tpain:#E89B8B;--tcyc:#9D8FC7;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Plum &amp; Ember<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#0F1E1C;--tsurface:#173029;--tline:#294B42;--ttext:#E4EFEA;--tpain:#E8B07A;--tcyc:#82B6C9;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Tidewater<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#15131F;--tsurface:#201D30;--tline:#332E47;--ttext:#E9E6F2;--tpain:#E29AAD;--tcyc:#8593D4;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Nocturne<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#16151A;--tsurface:#201F26;--tline:#322F39;--ttext:#EAE8EE;--tpain:#D98A86;--tcyc:#9DB89E;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Ash &amp; Sage<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#EFE8DD;--tsurface:#F8F3EC;--tline:#DCD2C4;--ttext:#3B332C;--tpain:#C2607A;--tcyc:#5E8C84;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Oat &amp; Rose<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#181511;--tsurface:#231F19;--tline:#38322A;--ttext:#ECE5DA;--tpain:#DB8662;--tcyc:#9DAE79;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Moss &amp; Clay<span class="check">✓</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scr-name" style="color:#776E80">&nbsp;</div>
+      <div class="annot"><b>The default, dark.</b> Selected tile gets a coral ring + check; the rest preview their own palettes in place.</div>
+    </div>
+
+    <!-- FRAME B · Nocturne selected (dark) -->
+    <div class="frame-wrap">
+      <div class="scr-name">Selected · Nocturne</div>
+      <div class="phone" style="--base:#15131F;--surface:#201D30;--line:#332E47;--text:#E9E6F2;--muted:#A39EB8;--pain:#E29AAD;--cycle:#8593D4;--onpain:#2C1820;">
+        <div class="island"></div>
+        <div class="statusbar"><span>21:24</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+        <div class="screen">
+          <div class="set-top"><span class="back">‹</span><span class="set-title">Appearance</span><span style="width:24px"></span></div>
+          <p class="set-sub">Pick a theme — the whole app re-skins. Symptoms always stay warm, your cycle always stays cool.</p>
+          <div class="set-label">Theme</div>
+          <div class="theme-grid">
+            <div class="ttile" style="--tbase:#1A1620;--tsurface:#241E2C;--tline:#3A3242;--ttext:#EDE6F0;--tpain:#E89B8B;--tcyc:#9D8FC7;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Plum &amp; Ember<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#0F1E1C;--tsurface:#173029;--tline:#294B42;--ttext:#E4EFEA;--tpain:#E8B07A;--tcyc:#82B6C9;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Tidewater<span class="check">✓</span></div>
+            </div>
+            <div class="ttile sel" style="--tbase:#15131F;--tsurface:#201D30;--tline:#332E47;--ttext:#E9E6F2;--tpain:#E29AAD;--tcyc:#8593D4;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Nocturne<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#16151A;--tsurface:#201F26;--tline:#322F39;--ttext:#EAE8EE;--tpain:#D98A86;--tcyc:#9DB89E;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Ash &amp; Sage<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#EFE8DD;--tsurface:#F8F3EC;--tline:#DCD2C4;--ttext:#3B332C;--tpain:#C2607A;--tcyc:#5E8C84;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Oat &amp; Rose<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#181511;--tsurface:#231F19;--tline:#38322A;--ttext:#ECE5DA;--tpain:#DB8662;--tcyc:#9DAE79;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Moss &amp; Clay<span class="check">✓</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scr-name" style="color:#776E80">&nbsp;</div>
+      <div class="annot"><b>A different dark.</b> Header, ring and check now wear Nocturne’s blush — proof the accent is a single token, not hard-coded per screen.</div>
+    </div>
+
+    <!-- FRAME C · Oat selected (light) -->
+    <div class="frame-wrap">
+      <div class="scr-name">Selected · Oat &amp; Rose (light)</div>
+      <div class="phone" style="--base:#EFE8DD;--surface:#F8F3EC;--line:#DCD2C4;--text:#3B332C;--muted:#8A8074;--pain:#C2607A;--cycle:#5E8C84;--onpain:#FBF6F2;">
+        <div class="island"></div>
+        <div class="statusbar"><span>09:24</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+        <div class="screen">
+          <div class="set-top"><span class="back">‹</span><span class="set-title">Appearance</span><span style="width:24px"></span></div>
+          <p class="set-sub">Pick a theme — the whole app re-skins. Symptoms always stay warm, your cycle always stays cool.</p>
+          <div class="set-label">Theme</div>
+          <div class="theme-grid">
+            <div class="ttile" style="--tbase:#1A1620;--tsurface:#241E2C;--tline:#3A3242;--ttext:#EDE6F0;--tpain:#E89B8B;--tcyc:#9D8FC7;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Plum &amp; Ember<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#0F1E1C;--tsurface:#173029;--tline:#294B42;--ttext:#E4EFEA;--tpain:#E8B07A;--tcyc:#82B6C9;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Tidewater<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#15131F;--tsurface:#201D30;--tline:#332E47;--ttext:#E9E6F2;--tpain:#E29AAD;--tcyc:#8593D4;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Nocturne<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#16151A;--tsurface:#201F26;--tline:#322F39;--ttext:#EAE8EE;--tpain:#D98A86;--tcyc:#9DB89E;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Ash &amp; Sage<span class="check">✓</span></div>
+            </div>
+            <div class="ttile sel" style="--tbase:#EFE8DD;--tsurface:#F8F3EC;--tline:#DCD2C4;--ttext:#3B332C;--tpain:#C2607A;--tcyc:#5E8C84;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Oat &amp; Rose<span class="check">✓</span></div>
+            </div>
+            <div class="ttile" style="--tbase:#181511;--tsurface:#231F19;--tline:#38322A;--ttext:#ECE5DA;--tpain:#DB8662;--tcyc:#9DAE79;">
+              <div class="t-band"><div class="row"><span class="t-phase">LUTEAL</span><span class="t-dots"><i class="dp"></i><i class="dc"></i></span></div><span class="t-aa">Aa</span></div>
+              <div class="t-name">Moss &amp; Clay<span class="check">✓</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scr-name" style="color:#776E80">&nbsp;</div>
+      <div class="annot"><b>Light mode, same machinery.</b> Even the status bar text flips dark. Good as an opt-in for daytime — just not the default, since bright is harder mid-migraine.</div>
+    </div>
+
+  </div>
+</body>
+</html>

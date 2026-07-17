@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "0.1.0",
+  "domain": "menstrual-migraine-and-period",
+  "entry": {
+    "timestamp": "auto",
+    "cyclePhase": "derived_from_healthkit"
+  },
+  "fields": [
+    {
+      "key": "migraine_present",
+      "label": "Migraine / headache",
+      "type": "boolean",
+      "required": true,
+      "meaning": "Whether a headache or migraine is present in this entry."
+    },
+    {
+      "key": "severity",
+      "label": "Severity",
+      "type": "scale",
+      "range": [1, 5],
+      "labels": { "1": "barely there", "2": "mild", "3": "moderate", "4": "severe", "5": "disabling" },
+      "appliesWhen": "migraine_present == true"
+    },
+    {
+      "key": "location",
+      "label": "Location",
+      "type": "multi_enum",
+      "appliesWhen": "migraine_present == true",
+      "values": [
+        { "key": "right",      "label": "Right side",       "synonyms": ["right", "right-sided", "r side"] },
+        { "key": "left",       "label": "Left side",        "synonyms": ["left", "left-sided"] },
+        { "key": "bilateral",  "label": "Both sides",       "synonyms": ["both sides", "all over", "whole head", "everywhere"] },
+        { "key": "behind_eye", "label": "Behind the eye",   "synonyms": ["behind eye", "behind my eye", "behind my left eye", "behind my right eye", "eye socket", "around the eye"] },
+        { "key": "temple",     "label": "Temple",           "synonyms": ["temple", "side of the head"] },
+        { "key": "forehead",   "label": "Forehead",         "synonyms": ["forehead", "front of head"] },
+        { "key": "jaw",        "label": "Jaw / teeth",      "synonyms": ["jaw", "teeth", "mandible", "mandíbula"] },
+        { "key": "neck",       "label": "Neck",             "synonyms": ["neck", "base of skull"] }
+      ]
+    },
+    {
+      "key": "quality",
+      "label": "Pain quality",
+      "type": "multi_enum",
+      "appliesWhen": "migraine_present == true",
+      "values": [
+        { "key": "throbbing", "label": "Throbbing", "synonyms": ["throbbing", "pulsing", "pounding"] },
+        { "key": "dull",      "label": "Dull",      "synonyms": ["dull", "aching"] },
+        { "key": "sharp",     "label": "Sharp",     "synonyms": ["sharp", "stabbing", "shooting"] },
+        { "key": "pressure",  "label": "Pressure",  "synonyms": ["pressure", "tight", "squeezing"] }
+      ]
+    },
+    {
+      "key": "worse_with_movement",
+      "label": "Worse with movement",
+      "type": "boolean",
+      "appliesWhen": "migraine_present == true"
+    },
+    {
+      "key": "aura",
+      "label": "Aura",
+      "type": "multi_enum",
+      "appliesWhen": "migraine_present == true",
+      "values": [
+        { "key": "none",    "label": "No aura",                        "synonyms": ["no aura", "none"] },
+        { "key": "visual",  "label": "Visual (lights, zigzags, spots)", "synonyms": ["flashing lights", "zigzag", "blind spot", "spots", "aura"] },
+        { "key": "sensory", "label": "Tingling / numbness",            "synonyms": ["tingling", "numbness", "pins and needles"] },
+        { "key": "speech",  "label": "Speech / word-finding",          "synonyms": ["slurred", "can't find words"] }
+      ]
+    },
+    {
+      "key": "associated_symptoms",
+      "label": "Other symptoms",
+      "type": "multi_enum",
+      "values": [
+        { "key": "nausea",            "label": "Nausea",            "synonyms": ["nausea", "queasy", "sick to my stomach"] },
+        { "key": "vomiting",          "label": "Vomiting",          "synonyms": ["vomiting", "threw up", "puked"] },
+        { "key": "light_sensitivity", "label": "Light sensitivity", "synonyms": ["light hurts", "sensitive to light", "photophobia", "light is killing me"] },
+        { "key": "sound_sensitivity", "label": "Sound sensitivity", "synonyms": ["sound hurts", "noise", "phonophobia"] },
+        { "key": "smell_sensitivity", "label": "Smell sensitivity", "synonyms": ["smells", "odors", "sensitive to smell"] }
+      ]
+    },
+    {
+      "key": "triggers",
+      "label": "Possible triggers",
+      "type": "multi_enum",
+      "values": [
+        { "key": "poor_sleep",      "label": "Poor sleep",            "synonyms": ["bad sleep", "slept badly", "didn't sleep", "little sleep", "dormi mal", "slept poorly"] },
+        { "key": "skipped_meal",    "label": "Skipped meal",          "synonyms": ["skipped a meal", "didn't eat", "hungry", "low blood sugar"] },
+        { "key": "stress",          "label": "Stress",                "synonyms": ["stress", "stressed", "anxious"] },
+        { "key": "stress_letdown",  "label": "Stress let-down",       "synonyms": ["after a stressful week", "let down", "weekend crash"] },
+        { "key": "dehydration",     "label": "Dehydration",           "synonyms": ["dehydrated", "didn't drink", "not enough water"] },
+        { "key": "alcohol",         "label": "Alcohol",               "synonyms": ["alcohol", "wine", "drinks", "drinking"] },
+        { "key": "caffeine_change", "label": "Caffeine change",       "synonyms": ["skipped coffee", "no coffee", "too much coffee"] },
+        { "key": "weather",         "label": "Weather",               "synonyms": ["weather", "pressure change", "storm"] },
+        { "key": "bright_light",    "label": "Bright light / screens", "synonyms": ["screen", "bright light", "sun", "screens"] }
+      ]
+    },
+    {
+      "key": "bleeding",
+      "label": "Bleeding",
+      "type": "enum",
+      "values": [
+        { "key": "none",     "label": "None",     "synonyms": ["no period", "not bleeding"] },
+        { "key": "spotting", "label": "Spotting", "synonyms": ["spotting", "just a little"] },
+        { "key": "light",    "label": "Light",    "synonyms": ["light flow", "light bleeding", "light period"] },
+        { "key": "medium",   "label": "Medium",   "synonyms": ["medium", "normal", "regular"] },
+        { "key": "heavy",    "label": "Heavy",    "synonyms": ["heavy", "soaking", "a lot"] }
+      ]
+    },
+    {
+      "key": "cramps_severity",
+      "label": "Cramps",
+      "type": "scale",
+      "range": [0, 5],
+      "labels": { "0": "none", "1": "barely there", "2": "mild", "3": "moderate", "4": "severe", "5": "disabling" }
+    },
+    {
+      "key": "relief_taken",
+      "label": "Medication / relief",
+      "type": "multi_enum",
+      "values": [
+        { "key": "ibuprofen",      "label": "Ibuprofen",        "synonyms": ["ibuprofen", "ibuprofeno", "brufen", "advil"] },
+        { "key": "naproxen",       "label": "Naproxen",         "synonyms": ["naproxen", "aleve"] },
+        { "key": "paracetamol",    "label": "Paracetamol",      "synonyms": ["paracetamol", "acetaminophen", "tylenol"] },
+        { "key": "triptan",        "label": "Triptan",          "synonyms": ["triptan", "sumatriptan", "imitrex"] },
+        { "key": "rest_dark_room", "label": "Rest / dark room", "synonyms": ["lay down", "dark room", "rested"] },
+        { "key": "cold_pack",      "label": "Cold pack",        "synonyms": ["ice", "cold pack", "cold compress"] },
+        { "key": "caffeine",       "label": "Caffeine",         "synonyms": ["coffee", "caffeine"] }
+      ]
+    },
+    {
+      "key": "relief_effect",
+      "label": "Did it help?",
+      "type": "enum",
+      "appliesWhen": "relief_taken not empty",
+      "values": [
+        { "key": "none",    "label": "No relief",    "synonyms": ["no relief", "didn't help", "did not help"] },
+        { "key": "partial", "label": "Some relief",  "synonyms": ["some relief", "a little", "a bit", "helped a little", "ajudou um pouco"] },
+        { "key": "full",    "label": "Full relief",  "synonyms": ["full relief", "helped completely", "went away", "all gone"] }
+      ]
+    }
+  ],
+  "freeNote": {
+    "key": "note",
+    "store": "verbatim_transcript",
+    "description": "Raw user utterance, stored on-device only. Never classified into enums — kept so the user can re-read their own words."
+  }
+}
