@@ -121,4 +121,13 @@ struct TranscriptAssemblyTests {
                 == "dull one\non the right"
         )
     }
+
+    @Test func liveDisplayKeepsGrowingUtteranceOnOneLine() {
+        #expect(
+            TranscriptFormatting.liveDisplay(
+                segment: "dull one on the right",
+                accumulated: "dull one"
+            ) == "dull one on the right"
+        )
+    }
 }

@@ -295,17 +295,28 @@ private struct LiveTranscriptCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(alignment: .lastTextBaseline, spacing: 0) {
-                Text(displayText)
-                    .font(.body.monospaced())
-                    .foregroundStyle(theme.text)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    HStack(alignment: .lastTextBaseline, spacing: 0) {
+                        Text(displayText)
+                            .font(.body.monospaced())
+                            .foregroundStyle(theme.text)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .id("transcript-body")
 
-                if isListening && !reduceMotion {
-                    BlinkingCursor()
-                        .foregroundStyle(theme.pain)
+                        if isListening && !reduceMotion {
+                            BlinkingCursor()
+                                .foregroundStyle(theme.pain)
+                        }
+                    }
+                }
+                .frame(maxHeight: 200)
+                .onChange(of: transcript) { _, _ in
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        proxy.scrollTo("transcript-body", anchor: .bottom)
+                    }
                 }
             }
         }
@@ -317,11 +328,14 @@ private struct LiveTranscriptCard: View {
                 .strokeBorder(theme.line, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Live transcript. \(displayText)")
+        .accessibilityLabel("Live transcript. \(transcript)")
     }
 
     private var displayText: String {
-        transcript.isEmpty ? "Start speaking when you're ready…" : transcript
+        if transcript.isEmpty {
+            return "Start speaking when you're ready…"
+        }
+        return TranscriptFormatting.forDisplay(transcript)
     }
 }
 

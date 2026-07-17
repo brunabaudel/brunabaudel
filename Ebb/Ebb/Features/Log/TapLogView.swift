@@ -81,7 +81,7 @@ struct TapLogView: View {
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             SectionHeader(title: "You said")
-            Text(note)
+            Text(TranscriptFormatting.forDisplay(note))
                 .font(.subheadline)
                 .foregroundStyle(theme.text)
                 .multilineTextAlignment(.leading)
