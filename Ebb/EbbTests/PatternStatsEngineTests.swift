@@ -97,10 +97,11 @@ struct PatternStatsEngineTests {
             schema: schema,
             limit: 4
         )
-        #expect(ranked.map(\.key) == ["poor_sleep", "stress", "dehydration"])
+        #expect(ranked.map(\.key) == ["poor_sleep", "dehydration", "stress"])
         #expect(ranked[0].count == 3)
         #expect(ranked[0].fraction == 1)
-        #expect(ranked[1].fraction == 2.0 / 3.0)
+        #expect(ranked[1].count == 1)
+        #expect(ranked[1].fraction == 1.0 / 3.0)
     }
 
     @Test func sharedPoorSleepLutealInsight() {
