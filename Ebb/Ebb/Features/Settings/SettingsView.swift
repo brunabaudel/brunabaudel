@@ -70,7 +70,9 @@ struct SettingsView: View {
             }
             .task {
                 await cycleService.refresh()
-                await cloudSyncStatus.refresh()
+                if AppRuntime.shouldUseCloudKitSync {
+                    await cloudSyncStatus.refresh()
+                }
             }
         }
     }

@@ -19,6 +19,13 @@ final class CloudSyncStatusService {
     }
 
     func refresh() async {
+        guard AppRuntime.shouldUseCloudKitSync else {
+            accountStatus = .couldNotDetermine
+            isAvailable = false
+            statusLabel = "On device"
+            return
+        }
+
         do {
             accountStatus = try await container.accountStatus()
             isAvailable = accountStatus == .available

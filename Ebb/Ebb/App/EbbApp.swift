@@ -32,14 +32,16 @@ struct EbbApp: App {
                 .task {
                     guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
-                    await cloudSyncStatus.refresh()
+                    if AppRuntime.shouldUseCloudKitSync {
+                        await cloudSyncStatus.refresh()
+                    }
                 }
         }
         .modelContainer(Self.modelContainer)
     }
 
     private static var isRunningTests: Bool {
-        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        AppRuntime.isRunningTests
     }
 
     private static let modelContainer: ModelContainer = {
@@ -54,13 +56,16 @@ struct EbbApp: App {
                     )
                 )
             }
-            return try ModelContainer(
-                for: schema,
-                configurations: ModelConfiguration(
-                    schema: schema,
-                    cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+            if AppRuntime.shouldUseCloudKitSync {
+                return try ModelContainer(
+                    for: schema,
+                    configurations: ModelConfiguration(
+                        schema: schema,
+                        cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+                    )
                 )
-            )
+            }
+            return try ModelContainer(for: schema)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
