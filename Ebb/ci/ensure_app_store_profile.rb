@@ -6,23 +6,25 @@ require "fileutils"
 require "spaceship"
 
 require_relative "apple_signing_helpers"
+require_relative "bundle_capabilities"
 
-BUNDLE_ID = "com.bcbs.ebb"
+BUNDLE_ID = EbbBundleCapabilities::BUNDLE_ID
 PROFILE_NAME = "Ebb App Store CI"
-HEALTHKIT = Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT
 
-def ensure_healthkit_capability(bundle)
-  enabled = bundle.get_capabilities.any? { |cap| cap.is_type?(HEALTHKIT) }
-  return if enabled
+def decoded_profile_content(profile)
+  return "" if profile.profile_content.to_s.empty?
 
-  bundle.create_capability(HEALTHKIT)
-  puts "Enabled HealthKit capability on #{BUNDLE_ID}"
+  Base64.decode64(profile.profile_content)
 end
 
 def profile_includes_healthkit?(profile)
-  return false if profile.profile_content.to_s.empty?
+  decoded_profile_content(profile).include?("com.apple.developer.healthkit")
+end
 
-  Base64.decode64(profile.profile_content).include?("com.apple.developer.healthkit")
+def profile_includes_icloud?(profile)
+  content = decoded_profile_content(profile)
+  content.include?("com.apple.developer.icloud-services") &&
+    content.include?("com.apple.developer.icloud-container-identifiers")
 end
 
 def fetch_app_store_profiles
@@ -47,7 +49,8 @@ def find_usable_profile(profiles, distribution_cert)
   profiles.find do |candidate|
     candidate.valid? &&
       candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
-      profile_includes_healthkit?(candidate)
+      profile_includes_healthkit?(candidate) &&
+      profile_includes_icloud?(candidate)
   end
 end
 
@@ -91,7 +94,7 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
 bundle = Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
 abort("Bundle ID not found: #{BUNDLE_ID}") unless bundle
 
-ensure_healthkit_capability(bundle)
+EbbBundleCapabilities.ensure_all!(bundle)
 
 distribution_certs = Spaceship::ConnectAPI::Certificate.all(
   filter: { certificateType: Spaceship::ConnectAPI::Certificate::CertificateType::IOS_DISTRIBUTION }
@@ -117,7 +120,8 @@ unless profile
   stale_profiles = all_profiles.reject do |candidate|
     candidate.valid? &&
       candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
-      profile_includes_healthkit?(candidate)
+      profile_includes_healthkit?(candidate) &&
+      profile_includes_icloud?(candidate)
   end
 
   if stale_profiles.any?
@@ -137,6 +141,13 @@ unless profile_includes_healthkit?(profile)
   abort(
     "Provisioning profile still missing HealthKit entitlement after regeneration. " \
     "Enable HealthKit on #{BUNDLE_ID} in Apple Developer → Identifiers, then re-run."
+  )
+end
+
+unless profile_includes_icloud?(profile)
+  abort(
+    "Provisioning profile still missing iCloud/CloudKit entitlements after regeneration. " \
+    "Ensure iCloud (CloudKit) and container iCloud.com.bcbs.ebb are enabled for #{BUNDLE_ID}, then re-run."
   )
 end
 

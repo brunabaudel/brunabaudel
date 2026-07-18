@@ -3,7 +3,9 @@
 
 require "spaceship"
 
-BUNDLE_ID = "com.bcbs.ebb"
+require_relative "bundle_capabilities"
+
+BUNDLE_ID = EbbBundleCapabilities::BUNDLE_ID
 BUNDLE_NAME = "Ebb"
 
 key_id = ENV.fetch("APPSTORE_API_KEY_ID")
@@ -22,12 +24,7 @@ Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
 
 existing = Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
 if existing
-  unless existing.get_capabilities.any? do |cap|
-           cap.is_type?(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
-         end
-    existing.create_capability(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
-    puts "Enabled HealthKit capability on #{BUNDLE_ID}"
-  end
+  EbbBundleCapabilities.ensure_all!(existing)
   puts "Bundle ID already registered: #{BUNDLE_ID}"
   exit 0
 end
@@ -38,6 +35,6 @@ bundle = Spaceship::ConnectAPI::BundleId.create(
   platform: Spaceship::ConnectAPI::Platform::IOS
 )
 
-bundle.create_capability(Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT)
+EbbBundleCapabilities.ensure_all!(bundle)
 
 puts "Registered bundle ID: #{BUNDLE_ID}"
