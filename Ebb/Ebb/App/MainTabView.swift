@@ -22,7 +22,7 @@ struct MainTabView: View {
                     Label("Calendar", systemImage: "calendar")
                 }
 
-            PatternsView()
+            PatternsView(schema: schema)
                 .tag(AppTab.patterns)
                 .tabItem {
                     Label("Patterns", systemImage: "chart.line.uptrend.xyaxis")
