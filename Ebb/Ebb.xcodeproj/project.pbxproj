@@ -329,6 +329,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Ebb;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Ebb uses Face ID to lock your symptom log so only you can open it.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Ebb reads your menstrual flow to tag symptoms with cycle phase and predict your next period. Nothing is written to HealthKit.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Ebb does not write to HealthKit. This description is required because the app includes the HealthKit entitlement for read-only menstrual flow access.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Ebb uses the microphone so you can say how you feel. Speech stays on this device — nothing is sent to a server.";
@@ -365,6 +366,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Ebb;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Ebb uses Face ID to lock your symptom log so only you can open it.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Ebb reads your menstrual flow to tag symptoms with cycle phase and predict your next period. Nothing is written to HealthKit.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Ebb does not write to HealthKit. This description is required because the app includes the HealthKit entitlement for read-only menstrual flow access.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Ebb uses the microphone so you can say how you feel. Speech stays on this device — nothing is sent to a server.";

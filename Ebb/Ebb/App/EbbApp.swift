@@ -8,6 +8,9 @@ struct EbbApp: App {
     private let schemaLoadResult = Result { try SchemaConfig.load() }
     @State private var cycleService = Self.makeCycleService()
     @State private var speechCapture = Self.makeSpeechCapture()
+    @State private var appLock = AppLockController()
+    @State private var cloudSyncStatus = CloudSyncStatusService()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -15,10 +18,21 @@ struct EbbApp: App {
                 .environment(\.theme, .plumEmber)
                 .environment(cycleService)
                 .environment(speechCapture)
+                .environment(appLock)
+                .environment(cloudSyncStatus)
                 .environment(\.symptomClassifier, Self.makeSymptomClassifier())
+                .overlay {
+                    if appLock.isLocked {
+                        AppLockOverlay()
+                    }
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    appLock.handleScenePhase(newPhase)
+                }
                 .task {
                     guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
+                    await cloudSyncStatus.refresh()
                 }
         }
         .modelContainer(Self.modelContainer)
@@ -30,13 +44,23 @@ struct EbbApp: App {
 
     private static let modelContainer: ModelContainer = {
         do {
+            let schema = Schema([SymptomEntry.self])
             if isRunningTests {
                 return try ModelContainer(
-                    for: SymptomEntry.self,
-                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                    for: schema,
+                    configurations: ModelConfiguration(
+                        schema: schema,
+                        isStoredInMemoryOnly: true
+                    )
                 )
             }
-            return try ModelContainer(for: SymptomEntry.self)
+            return try ModelContainer(
+                for: schema,
+                configurations: ModelConfiguration(
+                    schema: schema,
+                    cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+                )
+            )
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
