@@ -10,6 +10,7 @@ require_relative "bundle_capabilities"
 
 BUNDLE_ID = EbbBundleCapabilities::BUNDLE_ID
 PROFILE_NAME = "Ebb App Store CI"
+ICLOUD_CONTAINER = "iCloud.com.bcbs.ebb"
 
 def decoded_profile_content(profile)
   return "" if profile.profile_content.to_s.empty?
@@ -24,7 +25,8 @@ end
 def profile_includes_icloud?(profile)
   content = decoded_profile_content(profile)
   content.include?("com.apple.developer.icloud-services") &&
-    content.include?("com.apple.developer.icloud-container-identifiers")
+    content.include?("com.apple.developer.icloud-container-identifiers") &&
+    content.include?(ICLOUD_CONTAINER)
 end
 
 def fetch_app_store_profiles
@@ -146,8 +148,10 @@ end
 
 unless profile_includes_icloud?(profile)
   abort(
-    "Provisioning profile still missing iCloud/CloudKit entitlements after regeneration. " \
-    "Ensure iCloud (CloudKit) and container iCloud.com.bcbs.ebb are enabled for #{BUNDLE_ID}, then re-run."
+    "Provisioning profile still missing iCloud container #{ICLOUD_CONTAINER}. " \
+    "In Apple Developer → Identifiers: create iCloud container #{ICLOUD_CONTAINER}, " \
+    "open App ID #{BUNDLE_ID} → iCloud → Include CloudKit support → select that container, " \
+    "then re-run TestFlight."
   )
 end
 

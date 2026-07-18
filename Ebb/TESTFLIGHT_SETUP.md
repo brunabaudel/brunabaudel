@@ -36,6 +36,19 @@ The deploy job also runs `ci/prune_ephemeral_certificates.rb` after importing th
 `BUILD_CERTIFICATE_BASE64` matches a valid IOS_DISTRIBUTION certificate, and
 warn about any other distribution certificates on the account (without revoking them).
 
+## One-time: iCloud container for Phase 8 CloudKit sync
+
+Phase 8 adds CloudKit backup. The App Store profile must include container
+`iCloud.com.bcbs.ebb` (matching `Ebb/Ebb.entitlements`).
+
+1. Open [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
+2. If missing, click **+** → **iCloud Containers** → create identifier **`iCloud.com.bcbs.ebb`**
+3. Open App ID **`com.bcbs.ebb`** → enable **iCloud** → choose **Include CloudKit support**
+4. Click **Configure** (or **Edit**) next to iCloud → check **`iCloud.com.bcbs.ebb`** → **Save**
+5. Re-run **Actions → TestFlight** on branch **`app/ebb`** (or push a commit). CI regenerates the App Store profile automatically.
+
+CI enables the iCloud capability via API, but Apple still requires the container to be selected on the App ID in the developer portal (cannot be done via API key alone).
+
 ## GitHub variables
 
 | Name | Value |
@@ -138,3 +151,5 @@ Review).
 | `Missing Apple Distribution certificate secret` | Add `BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`, and `KEYCHAIN_PASSWORD` (see above) |
 | `No valid IOS_DISTRIBUTION certificate found` | Create or restore one Apple Distribution certificate, export `.p12`, update `BUILD_CERTIFICATE_BASE64` |
 | `does not match any valid IOS_DISTRIBUTION` | Re-export the `.p12` for the valid Apple Distribution cert on your account (must include private key) |
+| `doesn't match the entitlements file's value for the com.apple.developer.icloud-container-identifiers entitlement` | Complete the **One-time: iCloud container** steps above, then re-run TestFlight |
+| `Provisioning profile still missing iCloud container iCloud.com.bcbs.ebb` | Same — associate container `iCloud.com.bcbs.ebb` with App ID `com.bcbs.ebb` in Apple Developer |
