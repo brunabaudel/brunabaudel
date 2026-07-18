@@ -25,15 +25,10 @@ module EbbBundleCapabilities
   end
 
   def ensure_icloud!(bundle)
-    capability = bundle.get_capabilities.find { |cap| cap.is_type?(ICLOUD) }
-    if capability.nil?
-      bundle.create_capability(ICLOUD, settings: ICLOUD_SETTINGS)
-      puts "Enabled iCloud (CloudKit) capability on #{BUNDLE_ID}"
-      return
-    end
+    return if bundle.get_capabilities.any? { |cap| cap.is_type?(ICLOUD) }
 
-    bundle.update_capability(ICLOUD, enabled: true, settings: ICLOUD_SETTINGS)
-    puts "Ensured iCloud (CloudKit) capability on #{BUNDLE_ID}"
+    bundle.create_capability(ICLOUD, settings: ICLOUD_SETTINGS)
+    puts "Enabled iCloud (CloudKit) capability on #{BUNDLE_ID}"
   end
 
   def ensure_all!(bundle)
