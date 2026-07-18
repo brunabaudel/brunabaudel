@@ -50,7 +50,7 @@ struct CalendarCycleOverlay: Equatable, Sendable {
     }
 
     func cycleDay(for date: Date) -> Int? {
-        guard let start = periodStart(containing: date) else { return nil }
+        guard let start = periodStart(for: date) else { return nil }
         let dayOffset = calendar.dateComponents([.day], from: start, to: calendar.startOfDay(for: date)).day ?? 0
         guard dayOffset >= 0 else { return nil }
         return (dayOffset % cycleLength) + 1
@@ -98,9 +98,33 @@ struct CalendarCycleOverlay: Equatable, Sendable {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
+    /// Start-of-day for the period that contains `date`, if cycle data exists.
+    func periodStart(containing date: Date) -> Date? {
+        periodStart(for: date)
+    }
+
+    /// Entries whose timestamp falls in the same cycle as `date`.
+    func entriesInCycle(
+        containing date: Date,
+        from entries: [SymptomEntry]
+    ) -> [SymptomEntry] {
+        guard let start = periodStart(for: date),
+              let endExclusive = calendar.date(byAdding: .day, value: cycleLength, to: start)
+        else { return [] }
+        return entries.filter { $0.timestamp >= start && $0.timestamp < endExclusive }
+    }
+
+    /// Normalized 0…1 positions for the luteal band on a cycle timeline.
+    func lutealTimelineRange() -> (start: Double, end: Double) {
+        let firstLutealDay = 15
+        let span = max(cycleLength - 1, 1)
+        let start = Double(firstLutealDay - 1) / Double(span)
+        return (min(max(start, 0), 1), 1)
+    }
+
     // MARK: - Private
 
-    private func periodStart(containing date: Date) -> Date? {
+    private func periodStart(for date: Date) -> Date? {
         guard var start = anchorPeriodStart else { return nil }
         let target = calendar.startOfDay(for: date)
 
