@@ -9,17 +9,23 @@ final class CloudSyncStatusService {
     static let containerIdentifier = "iCloud.com.bcbs.ebb"
 
     private(set) var accountStatus: CKAccountStatus = .couldNotDetermine
-    private(set) var statusLabel = "Checking…"
+    private(set) var statusLabel: String
     private(set) var isAvailable = false
 
-    private let container: CKContainer
+    private let container: CKContainer?
 
-    init(container: CKContainer = CKContainer(identifier: CloudSyncStatusService.containerIdentifier)) {
-        self.container = container
+    init(containerIdentifier: String = CloudSyncStatusService.containerIdentifier) {
+        if AppRuntime.shouldUseCloudKitSync {
+            container = CKContainer(identifier: containerIdentifier)
+            statusLabel = "Checking…"
+        } else {
+            container = nil
+            statusLabel = "On device"
+        }
     }
 
     func refresh() async {
-        guard AppRuntime.shouldUseCloudKitSync else {
+        guard let container else {
             accountStatus = .couldNotDetermine
             isAvailable = false
             statusLabel = "On device"

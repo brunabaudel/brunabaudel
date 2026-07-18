@@ -22,11 +22,12 @@ struct EbbApp: App {
                 .environment(cloudSyncStatus)
                 .environment(\.symptomClassifier, Self.makeSymptomClassifier())
                 .overlay {
-                    if appLock.isLocked {
+                    if appLock.isLocked && !Self.isRunningTests {
                         AppLockOverlay()
                     }
                 }
                 .onChange(of: scenePhase) { _, newPhase in
+                    guard !Self.isRunningTests else { return }
                     appLock.handleScenePhase(newPhase)
                 }
                 .task {
