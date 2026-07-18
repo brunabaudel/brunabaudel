@@ -98,12 +98,11 @@ final class AppLockController {
     }
 
     private static func biometryLabel() -> String {
-        let context = LAContext()
-        switch context.biometryType {
-        case .faceID: "Face ID"
-        case .touchID: "Touch ID"
-        case .opticID: "Optic ID"
-        default: "Passcode"
+        switch LAContext().biometryType {
+        case .faceID: return "Face ID"
+        case .touchID: return "Touch ID"
+        case .opticID: return "Optic ID"
+        default: return "Passcode"
         }
     }
 
