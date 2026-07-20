@@ -64,13 +64,6 @@ final class CloudSyncStatusService {
         }
     }
 
-    deinit {
-        if let importObserver {
-            NotificationCenter.default.removeObserver(importObserver)
-        }
-        restoreTimeoutTask?.cancel()
-    }
-
     func configure(storageMode: AppStorageMode) {
         self.storageMode = storageMode
         updateStatusLabel()
