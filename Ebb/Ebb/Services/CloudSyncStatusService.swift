@@ -2,55 +2,206 @@ import CloudKit
 import Foundation
 import Observation
 
-/// Surfaces the user's iCloud account status for SwiftData + CloudKit sync (Phase 8).
+/// Whether iCloud restore is in progress after install or first launch.
+enum CloudRestorePhase: Equatable, Sendable {
+    case idle
+    case restoring
+    case restored
+    case noBackupFound
+}
+
+/// Surfaces iCloud account status, actual storage mode, and restore progress (Phase 8).
 @Observable
 @MainActor
 final class CloudSyncStatusService {
     static let containerIdentifier = "iCloud.com.bcbs.ebb"
+    private static let restoreTimeoutSeconds: UInt64 = 90
 
     private(set) var accountStatus: CKAccountStatus = .couldNotDetermine
     private(set) var statusLabel: String
     private(set) var isAvailable = false
+    private(set) var storageMode: AppStorageMode = .localFallback
+    private(set) var restorePhase: CloudRestorePhase = .idle
+
+    /// True when entries are actively syncing through CloudKit on this launch.
+    var isCloudKitSyncActive: Bool {
+        storageMode == .cloudKit && accountStatus == .available
+    }
 
     private let container: CKContainer?
+    private var restoreTimeoutTask: Task<Void, Never>?
+    private var importObserver: NSObjectProtocol?
+    private var cloudImportCompleted = false
 
-    init(containerIdentifier: String = CloudSyncStatusService.containerIdentifier) {
+    init(
+        storageMode: AppStorageMode = .localFallback,
+        containerIdentifier: String = CloudSyncStatusService.containerIdentifier
+    ) {
+        self.storageMode = storageMode
         if AppRuntime.shouldUseCloudKitSync {
             container = CKContainer(identifier: containerIdentifier)
-            statusLabel = "Checking…"
+            statusLabel = Self.makeStatusLabel(
+                storageMode: storageMode,
+                accountStatus: .couldNotDetermine
+            )
         } else {
             container = nil
-            statusLabel = "On device"
+            statusLabel = Self.makeStatusLabel(
+                storageMode: storageMode,
+                accountStatus: .couldNotDetermine
+            )
         }
+
+        importObserver = NotificationCenter.default.addObserver(
+            forName: .ebbCloudKitImportFinished,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.handleImportFinished()
+            }
+        }
+    }
+
+    deinit {
+        if let importObserver {
+            NotificationCenter.default.removeObserver(importObserver)
+        }
+        restoreTimeoutTask?.cancel()
+    }
+
+    func configure(storageMode: AppStorageMode) {
+        self.storageMode = storageMode
+        updateStatusLabel()
+    }
+
+    /// Test seam — production code uses `refresh()` against CloudKit.
+    func setAccountStatusForTesting(_ status: CKAccountStatus) {
+        accountStatus = status
+        isAvailable = status == .available
+        updateStatusLabel()
     }
 
     func refresh() async {
         guard let container else {
             accountStatus = .couldNotDetermine
             isAvailable = false
-            statusLabel = "On device"
+            updateStatusLabel()
             return
         }
 
         do {
             accountStatus = try await container.accountStatus()
             isAvailable = accountStatus == .available
-            statusLabel = Self.label(for: accountStatus)
         } catch {
             accountStatus = .couldNotDetermine
             isAvailable = false
-            statusLabel = "Unavailable"
+        }
+        updateStatusLabel()
+    }
+
+    /// Call from a view that owns the entry query so restore UI reflects real data.
+    func monitorRestore(entryCount: Int) {
+        guard isCloudKitSyncActive else {
+            finishRestoreMonitoring(as: .idle)
+            return
+        }
+
+        if entryCount > 0 {
+            cloudImportCompleted = false
+            finishRestoreMonitoring(as: .restored)
+            return
+        }
+
+        if cloudImportCompleted, restorePhase == .restoring {
+            finishRestoreMonitoring(as: .noBackupFound)
+            return
+        }
+
+        switch restorePhase {
+        case .restored, .noBackupFound:
+            return
+        case .idle:
+            restorePhase = .restoring
+            updateStatusLabel()
+            startRestoreTimeout()
+        case .restoring:
+            break
         }
     }
 
-    private static func label(for status: CKAccountStatus) -> String {
-        switch status {
-        case .available: "On · iCloud"
-        case .noAccount: "Sign in to iCloud"
-        case .restricted: "Restricted"
-        case .temporarilyUnavailable: "Temporarily unavailable"
-        case .couldNotDetermine: "Checking…"
-        @unknown default: "Unavailable"
+    // MARK: - Private
+
+    private func handleImportFinished() {
+        cloudImportCompleted = true
+        restoreTimeoutTask?.cancel()
+        restoreTimeoutTask = nil
+    }
+
+    private func startRestoreTimeout() {
+        restoreTimeoutTask?.cancel()
+        restoreTimeoutTask = Task {
+            try? await Task.sleep(nanoseconds: Self.restoreTimeoutSeconds * 1_000_000_000)
+            guard !Task.isCancelled, restorePhase == .restoring else { return }
+            cloudImportCompleted = true
+            restorePhase = .noBackupFound
+            updateStatusLabel()
+        }
+    }
+
+    private func finishRestoreMonitoring(as phase: CloudRestorePhase) {
+        restoreTimeoutTask?.cancel()
+        restoreTimeoutTask = nil
+        restorePhase = phase
+        updateStatusLabel()
+    }
+
+    private func updateStatusLabel() {
+        statusLabel = Self.makeStatusLabel(
+            storageMode: storageMode,
+            accountStatus: accountStatus,
+            restorePhase: restorePhase
+        )
+    }
+
+    static func makeStatusLabel(
+        storageMode: AppStorageMode,
+        accountStatus: CKAccountStatus,
+        restorePhase: CloudRestorePhase = .idle
+    ) -> String {
+        switch storageMode {
+        case .inMemoryTesting:
+            return "On device"
+        case .inMemoryFallback:
+            return "Temporary storage"
+        case .localByChoice:
+            return "On device only"
+        case .localFallback:
+            switch accountStatus {
+            case .available, .temporarilyUnavailable:
+                return "On device only — iCloud unavailable"
+            default:
+                return "On device only"
+            }
+        case .cloudKit:
+            if restorePhase == .restoring {
+                return "Restoring from iCloud…"
+            }
+            switch accountStatus {
+            case .available:
+                return "Syncing · iCloud"
+            case .noAccount:
+                return "Sign in to iCloud"
+            case .restricted:
+                return "Restricted"
+            case .temporarilyUnavailable:
+                return "Temporarily unavailable"
+            case .couldNotDetermine:
+                return "Checking…"
+            @unknown default:
+                return "Unavailable"
+            }
         }
     }
 }

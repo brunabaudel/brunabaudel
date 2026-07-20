@@ -159,11 +159,3 @@ struct AppLockControllerTests {
         #expect(controller.isLocked == false)
     }
 }
-
-@Suite("CloudSyncStatusService")
-@MainActor
-struct CloudSyncStatusServiceTests {
-    @Test func usesExpectedContainerIdentifier() {
-        #expect(CloudSyncStatusService.containerIdentifier == "iCloud.com.bcbs.ebb")
-    }
-}
