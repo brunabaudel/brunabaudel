@@ -95,7 +95,7 @@ struct SettingsView: View {
             }
 
             if cloudSyncStatus.restorePhase == .noBackupFound {
-                Text("No iCloud backup found for this Apple ID on this device.")
+                Text("No backup found for this Apple ID. Logs upload while Ebb is open — wait a minute after saving before deleting the app. Data logged before iCloud was enabled may not be in the cloud.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)

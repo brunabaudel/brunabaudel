@@ -49,6 +49,14 @@ struct MainTabView: View {
             }
             cloudSyncStatus.monitorRestore(entryCount: entries.count)
         }
+        .onChange(of: cloudSyncStatus.isAvailable) { _, isAvailable in
+            if isAvailable {
+                cloudSyncStatus.monitorRestore(entryCount: entries.count)
+            }
+        }
+        .onChange(of: cloudSyncStatus.importFinishedGeneration) { _, _ in
+            cloudSyncStatus.monitorRestore(entryCount: entries.count)
+        }
         .onChange(of: entries.count) { _, entryCount in
             cloudSyncStatus.monitorRestore(entryCount: entryCount)
         }
