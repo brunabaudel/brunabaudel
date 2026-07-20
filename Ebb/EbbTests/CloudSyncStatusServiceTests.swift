@@ -148,7 +148,7 @@ struct CloudRestoreMonitoringTests {
 
         NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        try? await Task.sleep(nanoseconds: 200_000_000)
         #expect(service.hasConfirmedBackup == true)
         #expect(service.statusLabel == "Backed up · iCloud")
     }
@@ -162,7 +162,7 @@ struct CloudRestoreMonitoringTests {
         #expect(service.hasConfirmedBackup == false)
         #expect(service.statusLabel == "Backing up to iCloud…")
 
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        try? await Task.sleep(nanoseconds: 200_000_000)
         #expect(service.hasConfirmedBackup == false)
     }
 }

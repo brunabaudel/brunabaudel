@@ -125,6 +125,7 @@ final class CloudSyncStatusService {
     func noteEntryCount(_ count: Int) {
         localEntryCount = count
         guard isCloudKitSyncActive, count > 0, !hasConfirmedBackup else { return }
+        updateStatusLabel()
         scheduleBackupVerification()
     }
 
