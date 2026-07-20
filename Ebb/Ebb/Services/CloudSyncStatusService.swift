@@ -205,7 +205,7 @@ final class CloudSyncStatusService {
     }
 
     private static var verificationRetryDelaysSeconds: [Double] {
-        AppRuntime.isRunningTests ? [0.01] : [3, 8, 15, 30, 60]
+        AppRuntime.isRunningTests ? [0.01, 0.01, 0.01, 0.01, 0.01] : [3, 8, 15, 30, 60]
     }
 
     private func startRestoreTimeout() {
