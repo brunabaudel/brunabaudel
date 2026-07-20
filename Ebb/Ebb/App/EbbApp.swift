@@ -27,9 +27,6 @@ struct EbbApp: App {
             .environment(appLock)
             .task {
                 guard !Self.isRunningTests else { return }
-                CloudKitSchemaInitializer.runIfNeeded(
-                    storageMode: Self.storageBootstrap.storageMode
-                )
                 CloudKitSyncBootstrap.activateIfNeeded(
                     storageMode: Self.storageBootstrap.storageMode
                 )
