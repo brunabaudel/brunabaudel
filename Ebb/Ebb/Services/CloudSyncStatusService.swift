@@ -22,6 +22,8 @@ final class CloudSyncStatusService {
     private(set) var isAvailable = false
     private(set) var storageMode: AppStorageMode = .localFallback
     private(set) var restorePhase: CloudRestorePhase = .idle
+    /// Bumped when CloudKit import finishes so views can re-check restore state.
+    private(set) var importFinishedGeneration = 0
 
     /// True when entries are actively syncing through CloudKit on this launch.
     var isCloudKitSyncActive: Bool {
@@ -97,7 +99,7 @@ final class CloudSyncStatusService {
     /// Call from a view that owns the entry query so restore UI reflects real data.
     func monitorRestore(entryCount: Int) {
         guard isCloudKitSyncActive else {
-            finishRestoreMonitoring(as: .idle)
+            // Account status may still be loading — don't abort restore monitoring.
             return
         }
 
@@ -130,6 +132,7 @@ final class CloudSyncStatusService {
         cloudImportCompleted = true
         restoreTimeoutTask?.cancel()
         restoreTimeoutTask = nil
+        importFinishedGeneration += 1
     }
 
     private func startRestoreTimeout() {
@@ -180,6 +183,9 @@ final class CloudSyncStatusService {
         case .cloudKit:
             if restorePhase == .restoring {
                 return "Restoring from iCloud…"
+            }
+            if restorePhase == .noBackupFound {
+                return "No iCloud backup found"
             }
             switch accountStatus {
             case .available:

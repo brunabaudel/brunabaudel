@@ -57,6 +57,15 @@ struct CloudSyncStatusLabelTests {
         )
         #expect(label == "Restoring from iCloud…")
     }
+
+    @Test func noBackupFoundShowsExplicitLabel() {
+        let label = CloudSyncStatusService.makeStatusLabel(
+            storageMode: .cloudKit,
+            accountStatus: .available,
+            restorePhase: .noBackupFound
+        )
+        #expect(label == "No iCloud backup found")
+    }
 }
 
 @Suite("Cloud sync restore monitoring")
@@ -80,6 +89,16 @@ struct CloudRestoreMonitoringTests {
         #expect(service.restorePhase == .idle)
     }
 
+    @Test func restoreStartsAfterAccountBecomesAvailable() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.monitorRestore(entryCount: 0)
+        #expect(service.restorePhase == .idle)
+
+        service.setAccountStatusForTesting(.available)
+        service.monitorRestore(entryCount: 0)
+        #expect(service.restorePhase == .restoring)
+    }
+
     @Test func importCompletionWithNoEntriesMarksNoBackupFound() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
@@ -90,6 +109,16 @@ struct CloudRestoreMonitoringTests {
         service.monitorRestore(entryCount: 0)
 
         #expect(service.restorePhase == .noBackupFound)
+    }
+
+    @Test func importFinishedGenerationIncrements() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        let before = service.importFinishedGeneration
+
+        NotificationCenter.default.post(name: .ebbCloudKitImportFinished, object: nil)
+
+        #expect(service.importFinishedGeneration == before + 1)
     }
 }
 
