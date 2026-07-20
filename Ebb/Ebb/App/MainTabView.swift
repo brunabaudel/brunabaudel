@@ -47,10 +47,12 @@ struct MainTabView: View {
             if ProcessInfo.processInfo.hasLaunchArgumentOpenTabCalendar {
                 selectedTab = .calendar
             }
+            cloudSyncStatus.noteEntryCount(entries.count)
             cloudSyncStatus.monitorRestore(entryCount: entries.count)
         }
         .onChange(of: cloudSyncStatus.isAvailable) { _, isAvailable in
             if isAvailable {
+                cloudSyncStatus.noteEntryCount(entries.count)
                 cloudSyncStatus.monitorRestore(entryCount: entries.count)
             }
         }
@@ -58,6 +60,7 @@ struct MainTabView: View {
             cloudSyncStatus.monitorRestore(entryCount: entries.count)
         }
         .onChange(of: entries.count) { _, entryCount in
+            cloudSyncStatus.noteEntryCount(entryCount)
             cloudSyncStatus.monitorRestore(entryCount: entryCount)
         }
     }
