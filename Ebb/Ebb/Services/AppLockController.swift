@@ -31,17 +31,26 @@ final class AppLockController {
     }
 
     var lockMethodLabel: String {
-        isEnabled ? Self.biometryLabel() : "Off"
+        isEnabled ? cachedBiometryLabel : "Off"
     }
 
     private let defaults: UserDefaults
+    private var cachedBiometryLabel = "Face ID"
     private var hasBeenBackgrounded = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        if isEnabled {
-            isLocked = true
+        cachedBiometryLabel = Self.resolveBiometryLabel()
+
+        guard isEnabled else { return }
+
+        guard Self.canEvaluateAppLock() else {
+            // Avoid bricking the app when biometrics/passcode are unavailable.
+            defaults.set(false, forKey: Keys.enabled)
+            return
         }
+
+        isLocked = true
     }
 
     var isPermissionFlowActive: Bool {
@@ -80,19 +89,25 @@ final class AppLockController {
         case .active:
             if activePermissionFlow == .externalHealthApp {
                 endPermissionFlow()
-                return
             }
-            promptUnlockIfNeeded(whenReturningFromBackground: true)
-        default:
+        case .inactive:
+            break
+        @unknown default:
             break
         }
     }
 
     /// Enables app lock after a successful local authentication check.
     func enableAfterAuthentication() async -> Bool {
+        guard Self.canEvaluateAppLock() else {
+            lastErrorMessage = "App lock is not available on this device."
+            return false
+        }
+
         let success = await authenticate(reason: "Turn on app lock", requiresEnabled: false)
         if success {
             defaults.set(true, forKey: Keys.enabled)
+            cachedBiometryLabel = Self.resolveBiometryLabel()
             unlock()
         }
         return success
@@ -111,17 +126,23 @@ final class AppLockController {
         isAuthenticating = true
         defer { isAuthenticating = false }
 
-        let context = LAContext()
-        var authError: NSError?
-        let policy: LAPolicy = .deviceOwnerAuthentication
-
-        guard context.canEvaluatePolicy(policy, error: &authError) else {
-            lastErrorMessage = authError?.localizedDescription ?? "App lock is not available on this device."
+        guard Self.canEvaluateAppLock() else {
+            lastErrorMessage = "App lock is not available on this device."
+            if requiresEnabled {
+                defaults.set(false, forKey: Keys.enabled)
+                unlock()
+            }
             return false
         }
 
+        let context = LAContext()
+        context.localizedFallbackTitle = "Enter Passcode"
+
         do {
-            let success = try await context.evaluatePolicy(policy, localizedReason: reason)
+            let success = try await context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: reason
+            )
             if success {
                 unlock()
             }
@@ -136,21 +157,16 @@ final class AppLockController {
 
     // MARK: - Private
 
-    private func promptUnlockIfNeeded(whenReturningFromBackground: Bool) {
-        guard isEnabled, isLocked, !isAuthenticating else { return }
-        if whenReturningFromBackground {
-            guard hasBeenBackgrounded else { return }
-        }
-
-        Task {
-            // Let the window finish presenting before showing Face ID.
-            try? await Task.sleep(for: .milliseconds(350))
-            guard isEnabled, isLocked, !isAuthenticating else { return }
-            await authenticate(reason: "Unlock Ebb")
-        }
+    static func isBiometricLockAvailable() -> Bool {
+        canEvaluateAppLock()
     }
 
-    private static func biometryLabel() -> String {
+    private static func canEvaluateAppLock() -> Bool {
+        let context = LAContext()
+        return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+    }
+
+    private static func resolveBiometryLabel() -> String {
         switch LAContext().biometryType {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
@@ -161,5 +177,27 @@ final class AppLockController {
 
     private enum Keys {
         static let enabled = "ebb.privacy.appLockEnabled"
+    }
+}
+
+/// Hosts app-lock scene handling inside the window — not on `App` itself.
+struct AppLockGate<Content: View>: View {
+    @Environment(AppLockController.self) private var appLock
+    @Environment(\.scenePhase) private var scenePhase
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        ZStack {
+            content()
+
+            if appLock.isLocked && !AppRuntime.isRunningTests {
+                AppLockOverlay()
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: appLock.isLocked)
+        .onChange(of: scenePhase) { _, newPhase in
+            appLock.handleScenePhase(newPhase)
+        }
     }
 }
