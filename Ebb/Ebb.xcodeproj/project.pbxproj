@@ -334,6 +334,7 @@
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Ebb does not write to HealthKit. This description is required because the app includes the HealthKit entitlement for read-only menstrual flow access.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Ebb uses the microphone so you can say how you feel. Speech stays on this device — nothing is sent to a server.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Ebb transcribes what you say on this device to fill your symptom chart. Nothing leaves your phone.";
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -371,6 +372,7 @@
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Ebb does not write to HealthKit. This description is required because the app includes the HealthKit entitlement for read-only menstrual flow access.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Ebb uses the microphone so you can say how you feel. Speech stays on this device — nothing is sent to a server.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Ebb transcribes what you say on this device to fill your symptom chart. Nothing leaves your phone.";
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;

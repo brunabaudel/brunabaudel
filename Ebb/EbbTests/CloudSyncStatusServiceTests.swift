@@ -66,6 +66,15 @@ struct CloudSyncStatusLabelTests {
         )
         #expect(label == "No iCloud backup found")
     }
+
+    @Test func confirmedBackupShowsBackedUpLabel() {
+        let label = CloudSyncStatusService.makeStatusLabel(
+            storageMode: .cloudKit,
+            accountStatus: .available,
+            hasConfirmedBackup: true
+        )
+        #expect(label == "Backed up · iCloud")
+    }
 }
 
 @Suite("Cloud sync restore monitoring")
@@ -119,6 +128,17 @@ struct CloudRestoreMonitoringTests {
         NotificationCenter.default.post(name: .ebbCloudKitImportFinished, object: nil)
 
         #expect(service.importFinishedGeneration == before + 1)
+    }
+
+    @Test func exportCompletionMarksBackupConfirmed() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        #expect(service.hasConfirmedBackup == false)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.statusLabel == "Backed up · iCloud")
     }
 }
 

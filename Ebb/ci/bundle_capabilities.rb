@@ -7,6 +7,7 @@ module EbbBundleCapabilities
 
   HEALTHKIT = Spaceship::ConnectAPI::BundleIdCapability::Type::HEALTHKIT
   ICLOUD = Spaceship::ConnectAPI::BundleIdCapability::Type::ICLOUD
+  PUSH_NOTIFICATIONS = Spaceship::ConnectAPI::BundleIdCapability::Type::PUSH_NOTIFICATIONS
   ICLOUD_VERSION = Spaceship::ConnectAPI::BundleIdCapability::Settings::ICLOUD_VERSION
   XCODE_6 = Spaceship::ConnectAPI::BundleIdCapability::Options::XCODE_6
 
@@ -31,8 +32,16 @@ module EbbBundleCapabilities
     puts "Enabled iCloud (CloudKit) capability on #{BUNDLE_ID}"
   end
 
+  def ensure_push_notifications!(bundle)
+    return if bundle.get_capabilities.any? { |cap| cap.is_type?(PUSH_NOTIFICATIONS) }
+
+    bundle.create_capability(PUSH_NOTIFICATIONS)
+    puts "Enabled Push Notifications capability on #{BUNDLE_ID}"
+  end
+
   def ensure_all!(bundle)
     ensure_healthkit!(bundle)
     ensure_icloud!(bundle)
+    ensure_push_notifications!(bundle)
   end
 end

@@ -45,7 +45,7 @@ enum StorageBootstrap {
                 cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
             )
             if let container = try? ModelContainer(for: schema, configurations: cloudConfiguration) {
-                CloudKitImportObserver.register()
+                CloudKitSyncObserver.register()
                 return Result(container: container, storageMode: .cloudKit)
             }
             NSLog("CloudKit ModelContainer unavailable, falling back to local SwiftData storage.")
@@ -92,8 +92,8 @@ enum StorageBootstrap {
     }
 }
 
-/// Listens for CloudKit import completion so restore UI can finish promptly.
-enum CloudKitImportObserver {
+/// Listens for CloudKit import/export events so restore and backup UI stay honest.
+enum CloudKitSyncObserver {
     static func register() {
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
@@ -104,17 +104,28 @@ enum CloudKitImportObserver {
                 let event = notification.userInfo?[
                     NSPersistentCloudKitContainer.eventNotificationUserInfoKey
                 ] as? NSPersistentCloudKitContainer.Event,
-                event.type == .import,
                 event.endDate != nil
             else {
                 return
             }
 
-            NotificationCenter.default.post(name: .ebbCloudKitImportFinished, object: nil)
+            switch event.type {
+            case .import:
+                NotificationCenter.default.post(name: .ebbCloudKitImportFinished, object: nil)
+            case .export:
+                if event.succeeded {
+                    NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+                } else if let error = event.error {
+                    NSLog("CloudKit export failed: \(error.localizedDescription)")
+                }
+            default:
+                break
+            }
         }
     }
 }
 
 extension Notification.Name {
     static let ebbCloudKitImportFinished = Notification.Name("ebb.cloudKitImportFinished")
+    static let ebbCloudKitExportFinished = Notification.Name("ebb.cloudKitExportFinished")
 }
