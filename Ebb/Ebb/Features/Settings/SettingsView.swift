@@ -243,7 +243,9 @@ struct SettingsView: View {
             get: { appLock.isEnabled },
             set: { newValue in
                 if newValue {
-                    Task { _ = await appLock.enableAfterAuthentication() }
+                    Task {
+                        await appLock.enableAfterAuthentication()
+                    }
                 } else {
                     appLock.isEnabled = false
                 }

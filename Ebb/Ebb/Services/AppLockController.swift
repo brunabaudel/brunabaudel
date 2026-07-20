@@ -16,6 +16,7 @@ final class AppLockController {
     private(set) var isLocked = false
     private(set) var lastErrorMessage: String?
     private(set) var activePermissionFlow: PermissionFlowKind?
+    private(set) var isAuthenticating = false
 
     var isEnabled: Bool {
         get { defaults.bool(forKey: Keys.enabled) }
@@ -34,6 +35,7 @@ final class AppLockController {
     }
 
     private let defaults: UserDefaults
+    private var hasBeenBackgrounded = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -73,14 +75,14 @@ final class AppLockController {
     func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .background:
+            hasBeenBackgrounded = true
             lock()
         case .active:
             if activePermissionFlow == .externalHealthApp {
                 endPermissionFlow()
                 return
             }
-            guard isEnabled, isLocked else { return }
-            Task { await authenticate(reason: "Unlock Ebb") }
+            promptUnlockIfNeeded(whenReturningFromBackground: true)
         default:
             break
         }
@@ -103,7 +105,12 @@ final class AppLockController {
             return true
         }
 
+        guard !isAuthenticating else { return false }
+
         lastErrorMessage = nil
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+
         let context = LAContext()
         var authError: NSError?
         let policy: LAPolicy = .deviceOwnerAuthentication
@@ -124,6 +131,22 @@ final class AppLockController {
         } catch {
             lastErrorMessage = error.localizedDescription
             return false
+        }
+    }
+
+    // MARK: - Private
+
+    private func promptUnlockIfNeeded(whenReturningFromBackground: Bool) {
+        guard isEnabled, isLocked, !isAuthenticating else { return }
+        if whenReturningFromBackground {
+            guard hasBeenBackgrounded else { return }
+        }
+
+        Task {
+            // Let the window finish presenting before showing Face ID.
+            try? await Task.sleep(for: .milliseconds(350))
+            guard isEnabled, isLocked, !isAuthenticating else { return }
+            await authenticate(reason: "Unlock Ebb")
         }
     }
 
