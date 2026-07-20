@@ -40,15 +40,16 @@ final class CloudSyncStatusService {
     private var exportObserver: NSObjectProtocol?
     private var cloudImportCompleted = false
     private var localEntryCount = 0
-    private var verifyBackupHandler: @Sendable () async -> Bool = {
-        await CloudKitBackupVerifier.hasBackupRecords()
-    }
+    private var verifyBackupHandler: @Sendable () async -> Bool
 
     init(
         storageMode: AppStorageMode = .localFallback,
         containerIdentifier: String = CloudSyncStatusService.containerIdentifier
     ) {
         self.storageMode = storageMode
+        verifyBackupHandler = {
+            await CloudKitBackupVerifier.hasBackupRecords(containerIdentifier: containerIdentifier)
+        }
         if AppRuntime.shouldUseCloudKitSync {
             container = CKContainer(identifier: containerIdentifier)
             statusLabel = Self.makeStatusLabel(
