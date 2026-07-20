@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Root tab scaffold: Today · Calendar · Patterns · Settings.
@@ -6,6 +7,8 @@ struct MainTabView: View {
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     @Environment(\.theme) private var theme
+    @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
+    @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
     @State private var selectedTab = AppTab.today
 
     var body: some View {
@@ -35,10 +38,19 @@ struct MainTabView: View {
                 }
         }
         .tint(theme.pain)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if cloudSyncStatus.restorePhase == .restoring {
+                CloudRestoreBanner()
+            }
+        }
         .onAppear {
             if ProcessInfo.processInfo.hasLaunchArgumentOpenTabCalendar {
                 selectedTab = .calendar
             }
+            cloudSyncStatus.monitorRestore(entryCount: entries.count)
+        }
+        .onChange(of: entries.count) { _, entryCount in
+            cloudSyncStatus.monitorRestore(entryCount: entryCount)
         }
     }
 }
@@ -56,4 +68,6 @@ private enum AppTab: Int {
         schemaLoadResult: Result { try SchemaConfig.load() }
     )
     .environment(\.theme, .plumEmber)
+    .environment(CloudSyncStatusService(storageMode: .cloudKit))
+    .modelContainer(for: SymptomEntry.self, inMemory: true)
 }

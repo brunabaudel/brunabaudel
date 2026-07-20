@@ -9,7 +9,9 @@ struct EbbApp: App {
     @State private var cycleService = Self.makeCycleService()
     @State private var speechCapture = Self.makeSpeechCapture()
     @State private var appLock = AppLockController()
-    @State private var cloudSyncStatus = CloudSyncStatusService()
+    @State private var cloudSyncStatus = CloudSyncStatusService(
+        storageMode: Self.storageBootstrap.storageMode
+    )
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
@@ -33,50 +35,19 @@ struct EbbApp: App {
                 .task {
                     guard !Self.isRunningTests else { return }
                     await cycleService.refresh()
-                    if AppRuntime.shouldUseCloudKitSync {
-                        await cloudSyncStatus.refresh()
-                    }
+                    await cloudSyncStatus.refresh()
                 }
         }
-        .modelContainer(Self.modelContainer)
+        .modelContainer(Self.storageBootstrap.container)
     }
 
     private static var isRunningTests: Bool {
         AppRuntime.isRunningTests
     }
 
-    private static let modelContainer: ModelContainer = {
-        do {
-            let schema = Schema([SymptomEntry.self])
-            if isRunningTests {
-                return try ModelContainer(
-                    for: schema,
-                    configurations: ModelConfiguration(
-                        schema: schema,
-                        isStoredInMemoryOnly: true
-                    )
-                )
-            }
-            if AppRuntime.shouldUseCloudKitSync {
-                do {
-                    return try ModelContainer(
-                        for: schema,
-                        configurations: ModelConfiguration(
-                            schema: schema,
-                            cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
-                        )
-                    )
-                } catch {
-                    // Fall back to on-device storage when CloudKit isn't provisioned yet.
-                    NSLog("CloudKit ModelContainer unavailable, using local storage: \(error)")
-                    return try ModelContainer(for: schema)
-                }
-            }
-            return try ModelContainer(for: schema)
-        } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
-        }
-    }()
+    private static let storageBootstrap = StorageBootstrap.make(
+        isRunningTests: AppRuntime.isRunningTests
+    )
 
     private static func makeCycleService() -> CycleService {
         if isRunningTests {

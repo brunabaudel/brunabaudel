@@ -17,6 +17,9 @@ struct SettingsView: View {
     @State private var exportErrorMessage: String?
     @State private var showDeleteConfirmation = false
     @State private var deleteErrorMessage: String?
+    @State private var syncPreferences = SyncPreferences()
+    @State private var showSyncRestartAlert = false
+    @State private var pendingSyncPreferenceValue = true
 
     var body: some View {
         NavigationStack {
@@ -66,7 +69,12 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes every entry from this device and your iCloud backup. It cannot be undone.")
+                Text(deleteAllDataMessage)
+            }
+            .alert("Restart required", isPresented: $showSyncRestartAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(syncRestartMessage)
             }
             .task {
                 await cycleService.refresh()
@@ -81,9 +89,16 @@ struct SettingsView: View {
         Section {
             LabeledContent {
                 Text(cloudSyncStatus.statusLabel)
-                    .foregroundStyle(cloudSyncStatus.isAvailable ? theme.ok : theme.muted)
+                    .foregroundStyle(cloudSyncStatus.isCloudKitSyncActive ? theme.ok : theme.muted)
             } label: {
                 Label("iCloud backup", systemImage: "icloud")
+            }
+
+            if cloudSyncStatus.restorePhase == .noBackupFound {
+                Text("No iCloud backup found for this Apple ID on this device.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                    .listRowBackground(theme.surface)
             }
 
             LabeledContent {
@@ -93,7 +108,7 @@ struct SettingsView: View {
                 Label("App lock", systemImage: "lock.fill")
             }
 
-            Text("No account, ever. Your data stays on your devices and in your private iCloud database — Ebb never sees it.")
+            Text(privacyExplanation)
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
                 .listRowBackground(theme.surface)
@@ -102,10 +117,33 @@ struct SettingsView: View {
         }
     }
 
+    private var privacyExplanation: String {
+        if cloudSyncStatus.isCloudKitSyncActive {
+            return "No account, ever. Your logs sync to your private iCloud database — Ebb never sees them."
+        }
+        return "No account, ever. Your logs stay on this device only — Ebb never sees them."
+    }
+
     // MARK: - Privacy controls
 
     private var privacyControlsSection: some View {
         Section {
+            Toggle(isOn: iCloudSyncToggleBinding) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("iCloud backup & sync")
+                    Text("Back up logs and sync iPhone and iPad via your Apple ID. Turn off to keep data on this device only.")
+                        .font(.caption)
+                        .foregroundStyle(theme.muted)
+                }
+            }
+
+            if syncPreferenceMismatch {
+                Text("Quit and reopen Ebb to apply this change.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.pain)
+                    .listRowBackground(theme.surface)
+            }
+
             Toggle(isOn: appLockToggleBinding) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Lock with Face ID")
@@ -114,11 +152,6 @@ struct SettingsView: View {
                         .foregroundStyle(theme.muted)
                 }
             }
-
-            Text("iCloud backup and sync uses your Apple ID’s private CloudKit database. Sign in to iCloud in Settings to sync iPhone and iPad.")
-                .font(.footnote)
-                .foregroundStyle(theme.muted)
-                .listRowBackground(theme.surface)
         } header: {
             Text("Backup & lock")
         }
@@ -152,13 +185,57 @@ struct SettingsView: View {
                     .foregroundStyle(theme.pain)
             }
 
-            Text("Export a portable copy of your logs, or delete everything from this device and iCloud.")
+            Text(exportDeleteFootnote)
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
                 .listRowBackground(theme.surface)
         } header: {
             Text("Your data")
         }
+    }
+
+    private var deleteAllDataMessage: String {
+        if cloudSyncStatus.isCloudKitSyncActive {
+            return "This removes every entry from this device and your iCloud backup. It cannot be undone."
+        }
+        return "This removes every entry from this device. It cannot be undone."
+    }
+
+    private var exportDeleteFootnote: String {
+        if cloudSyncStatus.isCloudKitSyncActive {
+            return "Export a portable copy of your logs, or delete everything from this device and iCloud."
+        }
+        return "Export a portable copy of your logs, or delete everything stored on this device."
+    }
+
+    private var syncPreferenceMismatch: Bool {
+        switch cloudSyncStatus.storageMode {
+        case .cloudKit:
+            return !syncPreferences.iCloudSyncEnabled
+        case .localByChoice:
+            return syncPreferences.iCloudSyncEnabled
+        default:
+            return false
+        }
+    }
+
+    private var syncRestartMessage: String {
+        if pendingSyncPreferenceValue {
+            return "Ebb will sync via iCloud the next time you open it. Your existing iCloud backup is still there if you had one."
+        }
+        return "New logs will stay on this device only the next time you open Ebb. Any existing iCloud backup stays in your Apple ID until you turn sync back on."
+    }
+
+    private var iCloudSyncToggleBinding: Binding<Bool> {
+        Binding(
+            get: { syncPreferences.iCloudSyncEnabled },
+            set: { newValue in
+                guard newValue != syncPreferences.iCloudSyncEnabled else { return }
+                pendingSyncPreferenceValue = newValue
+                syncPreferences.iCloudSyncEnabled = newValue
+                showSyncRestartAlert = true
+            }
+        )
     }
 
     private var appLockToggleBinding: Binding<Bool> {
@@ -298,6 +375,6 @@ struct SettingsView: View {
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(AppLockController())
-        .environment(CloudSyncStatusService())
+        .environment(CloudSyncStatusService(storageMode: .localByChoice))
         .modelContainer(for: SymptomEntry.self, inMemory: true)
 }
