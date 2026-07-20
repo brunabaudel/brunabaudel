@@ -100,6 +100,8 @@ PRs run **Build & Test (Simulator)** only (unit tests + screenshots, no TestFlig
 
 For TestFlight installs after a deploy: wait ~10–15 min, then open **TestFlight** on your iPhone and install **Ebbie**.
 
+To redeploy without code changes, push any commit that touches `Ebb/**` on branch `app/ebb`.
+
 First upload may take an extra 10–30 minutes for Apple to process.
 
 ## Screenshots
