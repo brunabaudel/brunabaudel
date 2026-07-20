@@ -159,7 +159,7 @@ struct AppLockControllerTests {
         #expect(controller.isLocked == false)
     }
 
-    @Test func coldLaunchDoesNotAutoPromptOnActive() {
+    @Test func coldLaunchStaysLockedWithoutAutoPrompt() {
         let defaults = UserDefaults(suiteName: "AppLockControllerTests.coldLaunch")!
         defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
 
@@ -172,7 +172,21 @@ struct AppLockControllerTests {
         #expect(controller.isAuthenticating == false)
     }
 
-    @Test func returningFromBackgroundCanAutoPromptWhenLocked() async {
+    @Test func disablesStoredPreferenceWhenAppLockUnavailable() {
+        let defaults = UserDefaults(suiteName: "AppLockControllerTests.unavailable")!
+        defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
+
+        let controller = AppLockController(defaults: defaults)
+
+        if AppLockController.isBiometricLockAvailable() {
+            #expect(controller.isEnabled == true)
+        } else {
+            #expect(controller.isEnabled == false)
+            #expect(controller.isLocked == false)
+        }
+    }
+
+    @Test func returningFromBackgroundStaysLockedUntilManualUnlock() async {
         let defaults = UserDefaults(suiteName: "AppLockControllerTests.returnPrompt")!
         defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
 
@@ -180,11 +194,10 @@ struct AppLockControllerTests {
         controller.unlock()
         controller.handleScenePhase(.background)
         controller.lock()
-
         controller.handleScenePhase(.active)
 
-        // Auth is scheduled asynchronously; without biometry hardware it stays locked.
-        try? await Task.sleep(for: .milliseconds(400))
+        try? await Task.sleep(for: .milliseconds(500))
         #expect(controller.isLocked == true)
+        #expect(controller.isAuthenticating == false)
     }
 }

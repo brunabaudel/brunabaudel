@@ -12,31 +12,24 @@ struct EbbApp: App {
     @State private var cloudSyncStatus = CloudSyncStatusService(
         storageMode: Self.storageBootstrap.storageMode
     )
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            RootView(schemaLoadResult: schemaLoadResult)
-                .environment(\.theme, .plumEmber)
-                .environment(cycleService)
-                .environment(speechCapture)
-                .environment(appLock)
-                .environment(cloudSyncStatus)
-                .environment(\.symptomClassifier, Self.makeSymptomClassifier())
-                .overlay {
-                    if appLock.isLocked && !Self.isRunningTests {
-                        AppLockOverlay()
-                    }
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    guard !Self.isRunningTests else { return }
-                    appLock.handleScenePhase(newPhase)
-                }
-                .task {
-                    guard !Self.isRunningTests else { return }
-                    await cycleService.refresh()
-                    await cloudSyncStatus.refresh()
-                }
+            AppLockGate {
+                RootView(schemaLoadResult: schemaLoadResult)
+                    .environment(\.theme, .plumEmber)
+                    .environment(cycleService)
+                    .environment(speechCapture)
+                    .environment(appLock)
+                    .environment(cloudSyncStatus)
+                    .environment(\.symptomClassifier, Self.makeSymptomClassifier())
+            }
+            .environment(appLock)
+            .task {
+                guard !Self.isRunningTests else { return }
+                await cycleService.refresh()
+                await cloudSyncStatus.refresh()
+            }
         }
         .modelContainer(Self.storageBootstrap.container)
     }

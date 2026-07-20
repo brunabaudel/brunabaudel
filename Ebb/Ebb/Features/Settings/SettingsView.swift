@@ -244,6 +244,8 @@ struct SettingsView: View {
             set: { newValue in
                 if newValue {
                     Task {
+                        // Wait for the toggle animation to finish before Face ID.
+                        try? await Task.sleep(for: .milliseconds(400))
                         await appLock.enableAfterAuthentication()
                     }
                 } else {
