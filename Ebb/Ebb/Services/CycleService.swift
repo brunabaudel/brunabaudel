@@ -23,6 +23,7 @@ final class CycleService {
 
     private let provider: any CycleDataProvider
     private let calendar: Calendar
+    private var refreshTask: Task<Void, Never>?
 
     init(
         preferences: CyclePreferences = CyclePreferences(),
@@ -41,20 +42,17 @@ final class CycleService {
     }
 
     func refresh() async {
-        authorizationStatus = await provider.resolveAuthorizationStatus(calendar: calendar)
-
-        guard authorizationStatus == .authorized else {
-            healthKitPeriodDays = []
-            lastRefreshed = Date.now
+        if let refreshTask {
+            await refreshTask.value
             return
         }
 
-        do {
-            healthKitPeriodDays = try await provider.fetchMenstrualFlowDays(calendar: calendar)
-            lastRefreshed = Date.now
-        } catch {
-            healthKitPeriodDays = []
+        let task = Task { @MainActor in
+            await performRefresh()
         }
+        refreshTask = task
+        await task.value
+        refreshTask = nil
     }
 
     func requestAuthorization() async {
@@ -69,6 +67,23 @@ final class CycleService {
             // Still refresh — the user may have partially enabled data in the sheet.
         }
         await refresh()
+    }
+
+    private func performRefresh() async {
+        authorizationStatus = await provider.resolveAuthorizationStatus(calendar: calendar)
+
+        guard authorizationStatus == .authorized else {
+            healthKitPeriodDays = []
+            lastRefreshed = Date.now
+            return
+        }
+
+        do {
+            healthKitPeriodDays = try await provider.fetchMenstrualFlowDays(calendar: calendar)
+            lastRefreshed = Date.now
+        } catch {
+            healthKitPeriodDays = []
+        }
     }
 
     func makeOverlay(

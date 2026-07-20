@@ -58,13 +58,19 @@ struct EbbApp: App {
                 )
             }
             if AppRuntime.shouldUseCloudKitSync {
-                return try ModelContainer(
-                    for: schema,
-                    configurations: ModelConfiguration(
-                        schema: schema,
-                        cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+                do {
+                    return try ModelContainer(
+                        for: schema,
+                        configurations: ModelConfiguration(
+                            schema: schema,
+                            cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+                        )
                     )
-                )
+                } catch {
+                    // Fall back to on-device storage when CloudKit isn't provisioned yet.
+                    NSLog("CloudKit ModelContainer unavailable, using local storage: \(error)")
+                    return try ModelContainer(for: schema)
+                }
             }
             return try ModelContainer(for: schema)
         } catch {

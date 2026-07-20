@@ -4,6 +4,7 @@ struct HealthKitSettingsView: View {
     @Environment(\.theme) private var theme
     @Environment(\.openURL) private var openURL
     @Environment(CycleService.self) private var cycleService
+    @Environment(AppLockController.self) private var appLock
     @State private var isRequestingHealthKit = false
 
     var body: some View {
@@ -28,6 +29,9 @@ struct HealthKitSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await cycleService.refresh()
+        }
+        .onDisappear {
+            appLock.endPermissionFlow()
         }
     }
 
@@ -74,7 +78,7 @@ struct HealthKitSettingsView: View {
                     .foregroundStyle(theme.muted)
             }
             Button("Open Health app") {
-                openURL(URL(string: "x-apple-health://")!)
+                openHealthApp()
             }
 
         case .denied:
@@ -82,7 +86,7 @@ struct HealthKitSettingsView: View {
                 .font(.footnote)
                 .foregroundStyle(theme.muted)
             Button("Open Health app") {
-                openURL(URL(string: "x-apple-health://")!)
+                openHealthApp()
             }
 
         case .unavailable:
@@ -116,8 +120,18 @@ struct HealthKitSettingsView: View {
 
     private func connectHealthKit() async {
         isRequestingHealthKit = true
-        defer { isRequestingHealthKit = false }
+        appLock.beginHealthKitAuthorizationFlow()
+        defer {
+            isRequestingHealthKit = false
+            appLock.endPermissionFlow()
+        }
         await cycleService.requestAuthorization()
+    }
+
+    private func openHealthApp() {
+        guard let url = URL(string: "x-apple-health://") else { return }
+        appLock.beginExternalHealthAppFlow()
+        openURL(url)
     }
 }
 
@@ -127,4 +141,5 @@ struct HealthKitSettingsView: View {
     }
     .environment(\.theme, .plumEmber)
     .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
+    .environment(AppLockController())
 }
