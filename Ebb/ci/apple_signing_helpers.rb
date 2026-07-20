@@ -7,27 +7,36 @@ module AppleSigningHelpers
   KEYCHAIN_PATH = File.expand_path(
     "#{ENV.fetch('RUNNER_TEMP', '/tmp')}/app-signing.keychain-db"
   )
+  LOGIN_KEYCHAIN_PATH = File.expand_path("~/Library/Keychains/login.keychain-db")
 
   module_function
 
+  def keychain_paths
+    [KEYCHAIN_PATH, LOGIN_KEYCHAIN_PATH].select { |path| File.exist?(path) }
+  end
+
   def keychain_fingerprint
-    return nil unless File.exist?(KEYCHAIN_PATH)
+    keychain_paths.each do |path|
+      output = `security find-identity -v -p codesigning "#{path}" 2>/dev/null`
+      match = output.match(/\)\s+([A-F0-9]{40})\s+"(?:Apple|iPhone) Distribution/i)
+      return match[1].upcase if match
 
-    output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
-    match = output.match(/\)\s+([A-F0-9]{40})\s+"(?:Apple|iPhone) Distribution/i)
-    return match[1].upcase if match
+      # Fall back to the first codesigning identity for diagnostics.
+      any = output.match(/\)\s+([A-F0-9]{40})\s+"/i)
+      return any[1].upcase if any
+    end
 
-    # Fall back to the first codesigning identity for diagnostics.
-    any = output.match(/\)\s+([A-F0-9]{40})\s+"/i)
-    any&.[](1)&.upcase
+    nil
   end
 
   def keychain_identity_label
-    return nil unless File.exist?(KEYCHAIN_PATH)
+    keychain_paths.each do |path|
+      output = `security find-identity -v -p codesigning "#{path}" 2>/dev/null`
+      match = output.match(/\)\s+[A-F0-9]{40}\s+"(.+)"$/i)
+      return match[1] if match
+    end
 
-    output = `security find-identity -v -p codesigning "#{KEYCHAIN_PATH}" 2>/dev/null`
-    match = output.match(/\)\s+[A-F0-9]{40}\s+"(.+)"$/i)
-    match&.[](1)
+    nil
   end
 
   def certificate_fingerprint(cert)
