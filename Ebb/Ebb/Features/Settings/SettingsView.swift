@@ -95,12 +95,17 @@ struct SettingsView: View {
             }
 
             if cloudSyncStatus.restorePhase == .noBackupFound {
-                Text("No backup found for this Apple ID. Wait until Settings shows \"Backed up · iCloud\" before deleting the app. Data logged on older builds before iCloud was enabled may not be in the cloud.")
+                Text("No backup found for this Apple ID. Wait until Settings shows \"Backed up · iCloud\" before deleting the app — that means your logs are confirmed in iCloud, not just saved on this phone.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
             } else if cloudSyncStatus.hasConfirmedBackup {
-                Text("Your logs are in your private iCloud database. They should return after reinstall on this Apple ID.")
+                Text("Your logs are confirmed in your private iCloud database. They should return after reinstall on this Apple ID.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                    .listRowBackground(theme.surface)
+            } else if cloudSyncStatus.isVerifyingBackup {
+                Text("Checking that your logs reached iCloud…")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)

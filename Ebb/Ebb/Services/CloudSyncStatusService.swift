@@ -14,8 +14,8 @@ enum CloudRestorePhase: Equatable, Sendable {
 @Observable
 @MainActor
 final class CloudSyncStatusService {
-    static let containerIdentifier = "iCloud.com.bcbs.ebb"
-    private static let restoreTimeoutSeconds: UInt64 = 90
+    nonisolated static let containerIdentifier = "iCloud.com.bcbs.ebb"
+    private static let restoreTimeoutSeconds: UInt64 = 180
 
     private(set) var accountStatus: CKAccountStatus = .couldNotDetermine
     private(set) var statusLabel: String
@@ -24,8 +24,9 @@ final class CloudSyncStatusService {
     private(set) var restorePhase: CloudRestorePhase = .idle
     /// Bumped when CloudKit import finishes so views can re-check restore state.
     private(set) var importFinishedGeneration = 0
-    /// True after CloudKit confirms an export to iCloud on this device.
+    /// True only after CloudKit confirms records exist for this Apple ID.
     private(set) var hasConfirmedBackup = false
+    private(set) var isVerifyingBackup = false
 
     /// True when entries are actively syncing through CloudKit on this launch.
     var isCloudKitSyncActive: Bool {
@@ -34,15 +35,21 @@ final class CloudSyncStatusService {
 
     private let container: CKContainer?
     private var restoreTimeoutTask: Task<Void, Never>?
+    private var verificationTask: Task<Void, Never>?
     private var importObserver: NSObjectProtocol?
     private var exportObserver: NSObjectProtocol?
     private var cloudImportCompleted = false
+    private var localEntryCount = 0
+    private var verifyBackupHandler: @Sendable () async -> Bool
 
     init(
         storageMode: AppStorageMode = .localFallback,
         containerIdentifier: String = CloudSyncStatusService.containerIdentifier
     ) {
         self.storageMode = storageMode
+        verifyBackupHandler = {
+            await CloudKitBackupVerifier.hasBackupRecords(containerIdentifier: containerIdentifier)
+        }
         if AppRuntime.shouldUseCloudKitSync {
             container = CKContainer(identifier: containerIdentifier)
             statusLabel = Self.makeStatusLabel(
@@ -92,6 +99,10 @@ final class CloudSyncStatusService {
         updateStatusLabel()
     }
 
+    func setVerifyBackupHandlerForTesting(_ handler: @escaping @Sendable () async -> Bool) {
+        verifyBackupHandler = handler
+    }
+
     func refresh() async {
         guard let container else {
             accountStatus = .couldNotDetermine
@@ -110,21 +121,31 @@ final class CloudSyncStatusService {
         updateStatusLabel()
     }
 
+    /// Track local entries and verify backup when data exists but is not confirmed yet.
+    func noteEntryCount(_ count: Int) {
+        localEntryCount = count
+        guard isCloudKitSyncActive, count > 0, !hasConfirmedBackup else { return }
+        updateStatusLabel()
+        scheduleBackupVerification()
+    }
+
     /// Call from a view that owns the entry query so restore UI reflects real data.
     func monitorRestore(entryCount: Int) {
-        guard isCloudKitSyncActive else {
-            // Account status may still be loading — don't abort restore monitoring.
-            return
-        }
+        localEntryCount = entryCount
+        guard isCloudKitSyncActive else { return }
 
         if entryCount > 0 {
-            cloudImportCompleted = false
-            hasConfirmedBackup = true
-            finishRestoreMonitoring(as: .restored)
+            if restorePhase == .restoring {
+                hasConfirmedBackup = true
+                finishRestoreMonitoring(as: .restored)
+            }
+            if !hasConfirmedBackup {
+                scheduleBackupVerification()
+            }
             return
         }
 
-        if cloudImportCompleted, restorePhase == .restoring {
+        if cloudImportCompleted {
             finishRestoreMonitoring(as: .noBackupFound)
             return
         }
@@ -151,8 +172,40 @@ final class CloudSyncStatusService {
     }
 
     private func handleExportFinished() {
-        hasConfirmedBackup = true
-        updateStatusLabel()
+        guard localEntryCount > 0, !hasConfirmedBackup else { return }
+        scheduleBackupVerification()
+    }
+
+    private func scheduleBackupVerification() {
+        verificationTask?.cancel()
+        verificationTask = Task {
+            isVerifyingBackup = true
+            updateStatusLabel()
+
+            let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
+            for delay in retryDelaysSeconds {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled, localEntryCount > 0, !hasConfirmedBackup else {
+                    isVerifyingBackup = false
+                    updateStatusLabel()
+                    return
+                }
+
+                if await verifyBackupHandler() {
+                    hasConfirmedBackup = true
+                    isVerifyingBackup = false
+                    updateStatusLabel()
+                    return
+                }
+            }
+
+            isVerifyingBackup = false
+            updateStatusLabel()
+        }
+    }
+
+    private static var verificationRetryDelaysSeconds: [Double] {
+        AppRuntime.isRunningTests ? [0.01, 0.01, 0.01, 0.01, 0.01] : [3, 8, 15, 30, 60]
     }
 
     private func startRestoreTimeout() {
@@ -178,7 +231,9 @@ final class CloudSyncStatusService {
             storageMode: storageMode,
             accountStatus: accountStatus,
             restorePhase: restorePhase,
-            hasConfirmedBackup: hasConfirmedBackup
+            hasConfirmedBackup: hasConfirmedBackup,
+            isVerifyingBackup: isVerifyingBackup,
+            localEntryCount: localEntryCount
         )
     }
 
@@ -186,7 +241,9 @@ final class CloudSyncStatusService {
         storageMode: AppStorageMode,
         accountStatus: CKAccountStatus,
         restorePhase: CloudRestorePhase = .idle,
-        hasConfirmedBackup: Bool = false
+        hasConfirmedBackup: Bool = false,
+        isVerifyingBackup: Bool = false,
+        localEntryCount: Int = 0
     ) -> String {
         switch storageMode {
         case .inMemoryTesting:
@@ -211,8 +268,11 @@ final class CloudSyncStatusService {
             }
             switch accountStatus {
             case .available:
-                if hasConfirmedBackup || restorePhase == .restored {
+                if hasConfirmedBackup {
                     return "Backed up · iCloud"
+                }
+                if isVerifyingBackup || localEntryCount > 0 {
+                    return "Backing up to iCloud…"
                 }
                 return "On · iCloud"
             case .noAccount:
