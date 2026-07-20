@@ -14,7 +14,7 @@ enum CloudRestorePhase: Equatable, Sendable {
 @Observable
 @MainActor
 final class CloudSyncStatusService {
-    static let containerIdentifier = "iCloud.com.bcbs.ebb"
+    nonisolated static let containerIdentifier = "iCloud.com.bcbs.ebb"
     private static let restoreTimeoutSeconds: UInt64 = 180
 
     private(set) var accountStatus: CKAccountStatus = .couldNotDetermine
