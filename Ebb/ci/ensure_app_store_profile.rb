@@ -29,6 +29,10 @@ def profile_includes_icloud?(profile)
     content.include?(ICLOUD_CONTAINER)
 end
 
+def profile_includes_push?(profile)
+  decoded_profile_content(profile).include?("aps-environment")
+end
+
 def fetch_app_store_profiles
   Spaceship::ConnectAPI::Profile.all(
     filter: {
@@ -52,7 +56,8 @@ def find_usable_profile(profiles, distribution_cert)
     candidate.valid? &&
       candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
       profile_includes_healthkit?(candidate) &&
-      profile_includes_icloud?(candidate)
+      profile_includes_icloud?(candidate) &&
+      profile_includes_push?(candidate)
   end
 end
 
@@ -123,7 +128,8 @@ unless profile
     candidate.valid? &&
       candidate.certificates&.any? { |cert| cert.id == distribution_cert.id } &&
       profile_includes_healthkit?(candidate) &&
-      profile_includes_icloud?(candidate)
+      profile_includes_icloud?(candidate) &&
+      profile_includes_push?(candidate)
   end
 
   if stale_profiles.any?
@@ -152,6 +158,13 @@ unless profile_includes_icloud?(profile)
     "In Apple Developer → Identifiers: create iCloud container #{ICLOUD_CONTAINER}, " \
     "open App ID #{BUNDLE_ID} → iCloud → Include CloudKit support → select that container, " \
     "then re-run TestFlight."
+  )
+end
+
+unless profile_includes_push?(profile)
+  abort(
+    "Provisioning profile still missing Push Notifications (aps-environment). " \
+    "Enable Push Notifications on #{BUNDLE_ID} in Apple Developer → Identifiers, then re-run TestFlight."
   )
 end
 

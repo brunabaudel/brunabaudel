@@ -27,6 +27,9 @@ struct EbbApp: App {
             .environment(appLock)
             .task {
                 guard !Self.isRunningTests else { return }
+                CloudKitSyncBootstrap.activateIfNeeded(
+                    storageMode: Self.storageBootstrap.storageMode
+                )
                 await cycleService.refresh()
                 await cloudSyncStatus.refresh()
             }

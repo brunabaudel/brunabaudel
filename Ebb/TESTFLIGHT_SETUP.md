@@ -45,7 +45,8 @@ Phase 8 adds CloudKit backup. The App Store profile must include container
 2. If missing, click **+** → **iCloud Containers** → create identifier **`iCloud.com.bcbs.ebb`**
 3. Open App ID **`com.bcbs.ebb`** → enable **iCloud** → choose **Include CloudKit support**
 4. Click **Configure** (or **Edit**) next to iCloud → check **`iCloud.com.bcbs.ebb`** → **Save**
-5. Re-run **Actions → TestFlight** on branch **`app/ebb`** (or push a commit). CI regenerates the App Store profile automatically.
+5. On the same App ID, enable **Push Notifications** (required for CloudKit sync uploads)
+6. Re-run **Actions → TestFlight** on branch **`app/ebb`** (or push a commit). CI regenerates the App Store profile automatically.
 
 CI enables the iCloud capability via API, but Apple still requires the container to be selected on the App ID in the developer portal (cannot be done via API key alone).
 

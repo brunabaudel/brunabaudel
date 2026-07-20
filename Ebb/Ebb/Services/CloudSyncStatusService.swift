@@ -24,6 +24,8 @@ final class CloudSyncStatusService {
     private(set) var restorePhase: CloudRestorePhase = .idle
     /// Bumped when CloudKit import finishes so views can re-check restore state.
     private(set) var importFinishedGeneration = 0
+    /// True after CloudKit confirms an export to iCloud on this device.
+    private(set) var hasConfirmedBackup = false
 
     /// True when entries are actively syncing through CloudKit on this launch.
     var isCloudKitSyncActive: Bool {
@@ -33,6 +35,7 @@ final class CloudSyncStatusService {
     private let container: CKContainer?
     private var restoreTimeoutTask: Task<Void, Never>?
     private var importObserver: NSObjectProtocol?
+    private var exportObserver: NSObjectProtocol?
     private var cloudImportCompleted = false
 
     init(
@@ -62,6 +65,17 @@ final class CloudSyncStatusService {
             guard let self else { return }
             MainActor.assumeIsolated {
                 self.handleImportFinished()
+            }
+        }
+
+        exportObserver = NotificationCenter.default.addObserver(
+            forName: .ebbCloudKitExportFinished,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                self.handleExportFinished()
             }
         }
     }
@@ -105,6 +119,7 @@ final class CloudSyncStatusService {
 
         if entryCount > 0 {
             cloudImportCompleted = false
+            hasConfirmedBackup = true
             finishRestoreMonitoring(as: .restored)
             return
         }
@@ -135,6 +150,11 @@ final class CloudSyncStatusService {
         importFinishedGeneration += 1
     }
 
+    private func handleExportFinished() {
+        hasConfirmedBackup = true
+        updateStatusLabel()
+    }
+
     private func startRestoreTimeout() {
         restoreTimeoutTask?.cancel()
         restoreTimeoutTask = Task {
@@ -157,14 +177,16 @@ final class CloudSyncStatusService {
         statusLabel = Self.makeStatusLabel(
             storageMode: storageMode,
             accountStatus: accountStatus,
-            restorePhase: restorePhase
+            restorePhase: restorePhase,
+            hasConfirmedBackup: hasConfirmedBackup
         )
     }
 
     nonisolated static func makeStatusLabel(
         storageMode: AppStorageMode,
         accountStatus: CKAccountStatus,
-        restorePhase: CloudRestorePhase = .idle
+        restorePhase: CloudRestorePhase = .idle,
+        hasConfirmedBackup: Bool = false
     ) -> String {
         switch storageMode {
         case .inMemoryTesting:
@@ -189,6 +211,9 @@ final class CloudSyncStatusService {
             }
             switch accountStatus {
             case .available:
+                if hasConfirmedBackup || restorePhase == .restored {
+                    return "Backed up · iCloud"
+                }
                 return "On · iCloud"
             case .noAccount:
                 return "Sign in to iCloud"
