@@ -45,38 +45,53 @@ struct EbbApp: App {
         AppRuntime.isRunningTests
     }
 
-    private static let modelContainer: ModelContainer = {
-        do {
-            let schema = Schema([SymptomEntry.self])
-            if isRunningTests {
-                return try ModelContainer(
-                    for: schema,
-                    configurations: ModelConfiguration(
-                        schema: schema,
-                        isStoredInMemoryOnly: true
-                    )
+    private static let modelContainer: ModelContainer = makeModelContainer()
+
+    private static func makeModelContainer() -> ModelContainer {
+        let schema = Schema([SymptomEntry.self])
+
+        if isRunningTests {
+            return (try? ModelContainer(
+                for: schema,
+                configurations: ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: true
                 )
-            }
-            if AppRuntime.shouldUseCloudKitSync {
-                do {
-                    return try ModelContainer(
-                        for: schema,
-                        configurations: ModelConfiguration(
-                            schema: schema,
-                            cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
-                        )
-                    )
-                } catch {
-                    // Fall back to on-device storage when CloudKit isn't provisioned yet.
-                    NSLog("CloudKit ModelContainer unavailable, using local storage: \(error)")
-                    return try ModelContainer(for: schema)
-                }
-            }
-            return try ModelContainer(for: schema)
-        } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            )) ?? inMemoryContainer(schema: schema)
         }
-    }()
+
+        if AppRuntime.shouldUseCloudKitSync {
+            let cloudConfiguration = ModelConfiguration(
+                schema: schema,
+                cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
+            )
+            if let container = try? ModelContainer(for: schema, configurations: cloudConfiguration) {
+                return container
+            }
+            NSLog("CloudKit ModelContainer unavailable, falling back to local SwiftData storage.")
+        }
+
+        let localConfiguration = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
+        if let container = try? ModelContainer(for: schema, configurations: localConfiguration) {
+            return container
+        }
+
+        NSLog("Persistent SwiftData store unavailable, using in-memory fallback.")
+        return inMemoryContainer(schema: schema)
+    }
+
+    private static func inMemoryContainer(schema: Schema) -> ModelContainer {
+        guard let container = try? ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: true
+            )
+        ) else {
+            preconditionFailure("In-memory SwiftData container must always succeed.")
+        }
+        return container
+    }
 
     private static func makeCycleService() -> CycleService {
         if isRunningTests {

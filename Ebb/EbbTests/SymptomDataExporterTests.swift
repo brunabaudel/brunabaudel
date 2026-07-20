@@ -158,6 +158,19 @@ struct AppLockControllerTests {
         #expect(controller.isPermissionFlowActive == false)
         #expect(controller.isLocked == false)
     }
+
+    @Test func coldLaunchDoesNotAutoPromptOnActive() {
+        let defaults = UserDefaults(suiteName: "AppLockControllerTests.coldLaunch")!
+        defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
+
+        let controller = AppLockController(defaults: defaults)
+
+        #expect(controller.isLocked == true)
+        controller.handleScenePhase(.active)
+
+        // Still locked — user taps Unlock; avoids LAContext during initial scene activation.
+        #expect(controller.isLocked == true)
+    }
 }
 
 @Suite("CloudSyncStatusService")

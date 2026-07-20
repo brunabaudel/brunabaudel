@@ -16,6 +16,7 @@ final class AppLockController {
     private(set) var isLocked = false
     private(set) var lastErrorMessage: String?
     private(set) var activePermissionFlow: PermissionFlowKind?
+    private var hasBeenBackgrounded = false
 
     var isEnabled: Bool {
         get { defaults.bool(forKey: Keys.enabled) }
@@ -73,13 +74,16 @@ final class AppLockController {
     func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .background:
+            hasBeenBackgrounded = true
             lock()
         case .active:
             if activePermissionFlow == .externalHealthApp {
                 endPermissionFlow()
                 return
             }
-            guard isEnabled, isLocked else { return }
+            // Only auto-prompt after returning from background — never on cold launch,
+            // where an immediate LAContext sheet can prevent the app from opening.
+            guard hasBeenBackgrounded, isEnabled, isLocked else { return }
             Task { await authenticate(reason: "Unlock Ebb") }
         default:
             break
