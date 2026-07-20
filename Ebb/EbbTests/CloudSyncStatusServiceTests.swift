@@ -25,12 +25,12 @@ struct SyncPreferencesTests {
 
 @Suite("Cloud sync status labels")
 struct CloudSyncStatusLabelTests {
-    @Test func cloudKitWithAccountShowsSyncingLabel() {
+    @Test func cloudKitWithAccountShowsOnLabel() {
         let label = CloudSyncStatusService.makeStatusLabel(
             storageMode: .cloudKit,
             accountStatus: .available
         )
-        #expect(label == "Syncing · iCloud")
+        #expect(label == "On · iCloud")
     }
 
     @Test func localByChoiceShowsOnDeviceOnly() {
