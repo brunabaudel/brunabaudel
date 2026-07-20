@@ -7,8 +7,15 @@ import SwiftUI
 @Observable
 @MainActor
 final class AppLockController {
+    /// Why app lock is temporarily suppressed (HealthKit sheet or Health app).
+    enum PermissionFlowKind: Equatable {
+        case healthKitAuthorization
+        case externalHealthApp
+    }
+
     private(set) var isLocked = false
     private(set) var lastErrorMessage: String?
+    private(set) var activePermissionFlow: PermissionFlowKind?
 
     var isEnabled: Bool {
         get { defaults.bool(forKey: Keys.enabled) }
@@ -35,8 +42,26 @@ final class AppLockController {
         }
     }
 
+    var isPermissionFlowActive: Bool {
+        activePermissionFlow != nil
+    }
+
+    /// While the HealthKit permission sheet is visible.
+    func beginHealthKitAuthorizationFlow() {
+        activePermissionFlow = .healthKitAuthorization
+    }
+
+    /// While the user is in the Health app following in-app instructions.
+    func beginExternalHealthAppFlow() {
+        activePermissionFlow = .externalHealthApp
+    }
+
+    func endPermissionFlow() {
+        activePermissionFlow = nil
+    }
+
     func lock() {
-        guard isEnabled else { return }
+        guard isEnabled, activePermissionFlow == nil else { return }
         isLocked = true
     }
 
@@ -49,7 +74,12 @@ final class AppLockController {
         switch phase {
         case .background:
             lock()
-        case .active where isEnabled && isLocked:
+        case .active:
+            if activePermissionFlow == .externalHealthApp {
+                endPermissionFlow()
+                return
+            }
+            guard isEnabled, isLocked else { return }
             Task { await authenticate(reason: "Unlock Ebb") }
         default:
             break

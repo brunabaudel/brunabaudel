@@ -124,6 +124,40 @@ struct AppLockControllerTests {
 
         #expect(controller.isLocked == true)
     }
+
+    @Test func healthKitAuthorizationFlowSkipsBackgroundLock() {
+        let defaults = UserDefaults(suiteName: "AppLockControllerTests.healthKitFlow")!
+        defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
+
+        let controller = AppLockController(defaults: defaults)
+        controller.unlock()
+        controller.beginHealthKitAuthorizationFlow()
+        controller.handleScenePhase(.background)
+
+        #expect(controller.isLocked == false)
+        #expect(controller.isPermissionFlowActive == true)
+
+        controller.endPermissionFlow()
+        controller.handleScenePhase(.background)
+
+        #expect(controller.isLocked == true)
+    }
+
+    @Test func externalHealthAppFlowEndsOnActiveWithoutAutoLock() {
+        let defaults = UserDefaults(suiteName: "AppLockControllerTests.healthAppFlow")!
+        defaults.set(true, forKey: "ebb.privacy.appLockEnabled")
+
+        let controller = AppLockController(defaults: defaults)
+        controller.unlock()
+        controller.beginExternalHealthAppFlow()
+        controller.handleScenePhase(.background)
+
+        #expect(controller.isLocked == false)
+        controller.handleScenePhase(.active)
+
+        #expect(controller.isPermissionFlowActive == false)
+        #expect(controller.isLocked == false)
+    }
 }
 
 @Suite("CloudSyncStatusService")
