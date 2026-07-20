@@ -183,7 +183,7 @@ final class CloudSyncStatusService {
             }
             switch accountStatus {
             case .available:
-                return "Syncing · iCloud"
+                return "On · iCloud"
             case .noAccount:
                 return "Sign in to iCloud"
             case .restricted:
