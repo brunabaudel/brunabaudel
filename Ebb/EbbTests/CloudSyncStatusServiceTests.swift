@@ -139,18 +139,39 @@ struct CloudRestoreMonitoringTests {
         #expect(service.importFinishedGeneration == before + 1)
     }
 
-    @Test func exportCompletionVerifiesBackupBeforeConfirming() async {
+    @Test func backupVerificationConfirmsWhenCloudHasRecords() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
         service.setVerifyBackupHandlerForTesting { true }
         service.noteEntryCount(1)
-        #expect(service.hasConfirmedBackup == false)
+        #expect(service.statusLabel == "Backing up to iCloud…")
+
+        for _ in 0..<100 where !service.hasConfirmedBackup {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.statusLabel == "Backed up · iCloud")
+    }
+
+    @Test func exportEventRetriggersBackupVerification() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        var verificationCount = 0
+        service.setVerifyBackupHandlerForTesting {
+            verificationCount += 1
+            return verificationCount >= 2
+        }
+        service.noteEntryCount(1)
 
         NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        for _ in 0..<100 where !service.hasConfirmedBackup {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+
         #expect(service.hasConfirmedBackup == true)
-        #expect(service.statusLabel == "Backed up · iCloud")
+        #expect(verificationCount >= 2)
     }
 
     @Test func localEntriesDoNotConfirmBackupWithoutCloudVerification() async {
