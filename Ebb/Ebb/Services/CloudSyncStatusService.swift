@@ -58,7 +58,7 @@ final class CloudSyncStatusService {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in
+            MainActor.assumeIsolated {
                 self.handleImportFinished()
             }
         }
