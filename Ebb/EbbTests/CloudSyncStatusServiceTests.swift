@@ -157,10 +157,10 @@ struct CloudRestoreMonitoringTests {
     @Test func exportEventRetriggersBackupVerification() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        var verificationCount = 0
+        let counter = BackupVerificationCounter()
         service.setVerifyBackupHandlerForTesting {
-            verificationCount += 1
-            return verificationCount >= 2
+            await counter.increment()
+            return await counter.value >= 2
         }
         service.noteEntryCount(1)
 
@@ -171,7 +171,7 @@ struct CloudRestoreMonitoringTests {
         }
 
         #expect(service.hasConfirmedBackup == true)
-        #expect(verificationCount >= 2)
+        #expect(await counter.value >= 2)
     }
 
     @Test func localEntriesDoNotConfirmBackupWithoutCloudVerification() async {
@@ -185,6 +185,14 @@ struct CloudRestoreMonitoringTests {
 
         try? await Task.sleep(nanoseconds: 200_000_000)
         #expect(service.hasConfirmedBackup == false)
+    }
+}
+
+private actor BackupVerificationCounter {
+    private(set) var value = 0
+
+    func increment() {
+        value += 1
     }
 }
 
