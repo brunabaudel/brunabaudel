@@ -36,6 +36,7 @@ struct AppLockOverlay: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(theme.pain)
+                .disabled(appLock.isAuthenticating)
             }
             .padding(32)
         }
