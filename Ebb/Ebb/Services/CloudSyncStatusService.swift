@@ -158,7 +158,7 @@ final class CloudSyncStatusService {
         )
     }
 
-    static func makeStatusLabel(
+    nonisolated static func makeStatusLabel(
         storageMode: AppStorageMode,
         accountStatus: CKAccountStatus,
         restorePhase: CloudRestorePhase = .idle
