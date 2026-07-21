@@ -96,7 +96,7 @@ struct CloudSyncStatusLabelTests {
     }
 }
 
-@Suite("Cloud sync restore monitoring")
+@Suite("Cloud sync restore monitoring", .serialized)
 @MainActor
 struct CloudRestoreMonitoringTests {
     @Test func restoreCompletesWhenEntriesAppear() {
@@ -236,11 +236,35 @@ struct CloudRestoreMonitoringTests {
         NotificationCenter.default.post(
             name: .ebbCloudKitExportFailed,
             object: nil,
-            userInfo: ["error": "Network unavailable"]
+            userInfo: ["error": "iCloud isn't reachable right now. Connect to Wi‑Fi and try again."]
         )
 
         #expect(service.backupPhase == .stalled)
-        #expect(service.lastBackupError == "Network unavailable")
+        #expect(service.lastBackupError == "iCloud isn't reachable right now. Connect to Wi‑Fi and try again.")
+        #expect(service.isVerifyingBackup == false)
+    }
+
+    @Test func exportFailureBlocksLaterExportSuccessFromConfirming() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.noteEntryCount(1)
+
+        NotificationCenter.default.post(
+            name: .ebbCloudKitExportFailed,
+            object: nil,
+            userInfo: [
+                "error": "iCloud couldn't finish uploading all of your logs. Stay on Wi‑Fi, keep Ebb open, and tap Retry backup."
+            ]
+        )
+
+        #expect(service.backupPhase == .stalled)
+        #expect(service.hasConfirmedBackup == false)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.backupPhase == .stalled)
+        #expect(service.hasConfirmedBackup == false)
+        #expect(service.isVerifyingBackup == false)
     }
 }
 
