@@ -62,8 +62,7 @@ enum CloudKitBackupVerifier {
     private static func isTransient(_ error: CKError) -> Bool {
         switch error.code {
         case .networkUnavailable, .networkFailure, .serviceUnavailable,
-             .requestRateLimited, .zoneBusy, .serverResponseLost,
-             .zoneNotFound, .userCancelled, .operationCancelled:
+             .requestRateLimited, .zoneBusy, .serverResponseLost, .zoneNotFound:
             true
         default:
             false
