@@ -9,5 +9,6 @@ enum LocalEntrySaveNotifier {
 
 extension Notification.Name {
     static let ebbLocalEntrySaved = Notification.Name("ebb.localEntrySaved")
+    static let ebbCloudKitExportStarted = Notification.Name("ebb.cloudKitExportStarted")
     static let ebbCloudKitExportFailed = Notification.Name("ebb.cloudKitExportFailed")
 }

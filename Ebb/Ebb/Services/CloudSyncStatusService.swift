@@ -10,6 +10,16 @@ enum CloudRestorePhase: Equatable, Sendable {
     case noBackupFound
 }
 
+/// Stages shown in backup progress UI. CloudKit does not expose byte-level upload progress.
+enum CloudBackupPhase: Equatable, Sendable {
+    case idle
+    case savedLocally
+    case uploading
+    case confirming
+    case backedUp
+    case stalled
+}
+
 /// Surfaces iCloud account status, actual storage mode, and restore progress (Phase 8).
 @Observable
 @MainActor
@@ -28,6 +38,43 @@ final class CloudSyncStatusService {
     private(set) var hasConfirmedBackup = false
     private(set) var isVerifyingBackup = false
     private(set) var lastBackupError: String?
+    private(set) var backupPhase: CloudBackupPhase = .idle
+    /// Estimated backup progress from 0 (idle) to 1 (confirmed in iCloud).
+    private(set) var backupProgress: Double = 0
+    private(set) var isExportInProgress = false
+    private(set) var verificationStep = 0
+    private(set) var verificationStepCount = 5
+    private(set) var iCloudAccountSummary = "Checking…"
+
+    /// Number of local entries tracked for backup status.
+    var trackedEntryCount: Int { localEntryCount }
+
+    /// True while backup UI should show an active progress indicator.
+    var isBackupInProgress: Bool {
+        switch backupPhase {
+        case .savedLocally, .uploading, .confirming:
+            true
+        case .idle, .backedUp, .stalled:
+            false
+        }
+    }
+
+    var backupPhaseLabel: String {
+        switch backupPhase {
+        case .idle:
+            return "Ready"
+        case .savedLocally:
+            return "Saved on this iPhone"
+        case .uploading:
+            return isExportInProgress ? "Uploading to iCloud…" : "Waiting for iCloud upload…"
+        case .confirming:
+            return "Confirming in iCloud…"
+        case .backedUp:
+            return "Backed up · iCloud"
+        case .stalled:
+            return "Upload paused"
+        }
+    }
 
     /// True when entries are actively syncing through CloudKit on this launch.
     var isCloudKitSyncActive: Bool {
@@ -39,6 +86,7 @@ final class CloudSyncStatusService {
     private var verificationTask: Task<Void, Never>?
     private var importObserver: NSObjectProtocol?
     private var exportObserver: NSObjectProtocol?
+    private var exportStartedObserver: NSObjectProtocol?
     private var exportFailedObserver: NSObjectProtocol?
     private var localSaveObserver: NSObjectProtocol?
     private var cloudImportCompleted = false
@@ -90,6 +138,17 @@ final class CloudSyncStatusService {
             }
         }
 
+        exportStartedObserver = NotificationCenter.default.addObserver(
+            forName: .ebbCloudKitExportStarted,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                self.handleExportStarted()
+            }
+        }
+
         exportFailedObserver = NotificationCenter.default.addObserver(
             forName: .ebbCloudKitExportFailed,
             object: nil,
@@ -136,10 +195,20 @@ final class CloudSyncStatusService {
         verifyBackupHandler = handler
     }
 
+    func setBackupPhaseForTesting(_ phase: CloudBackupPhase) {
+        backupPhase = phase
+    }
+
+    func setBackupProgressForTesting(_ progress: Double) {
+        backupProgress = progress
+    }
+
+    /// Re-check iCloud account state and refresh the account summary shown in Settings.
     func refresh() async {
         guard let container else {
             accountStatus = .couldNotDetermine
             isAvailable = false
+            iCloudAccountSummary = "iCloud unavailable in this build"
             updateStatusLabel()
             return
         }
@@ -147,10 +216,25 @@ final class CloudSyncStatusService {
         do {
             accountStatus = try await container.accountStatus()
             isAvailable = accountStatus == .available
+            iCloudAccountSummary = Self.makeAccountSummary(for: accountStatus)
         } catch {
             accountStatus = .couldNotDetermine
             isAvailable = false
+            iCloudAccountSummary = "Could not reach iCloud"
         }
+        updateStatusLabel()
+    }
+
+    /// Kick off another upload attempt after the user taps Retry in Settings.
+    func retryBackupAttempt() {
+        guard isCloudKitSyncActive, localEntryCount > 0, !hasConfirmedBackup else { return }
+        awaitingExportAfterSave = true
+        lastBackupError = nil
+        isExportInProgress = false
+        verificationStep = 0
+        beginBackupProgress(at: .savedLocally, progress: 0.2)
+        CloudKitSyncKicker.kick()
+        scheduleBackupVerification()
         updateStatusLabel()
     }
 
@@ -161,6 +245,9 @@ final class CloudSyncStatusService {
         guard isCloudKitSyncActive, count > 0, !hasConfirmedBackup else {
             updateStatusLabel()
             return
+        }
+        if backupPhase == .idle {
+            beginBackupProgress(at: .savedLocally, progress: 0.2)
         }
         updateStatusLabel()
         scheduleBackupVerification()
@@ -214,9 +301,19 @@ final class CloudSyncStatusService {
         importFinishedGeneration += 1
     }
 
+    private func handleExportStarted() {
+        guard !hasConfirmedBackup else { return }
+        isExportInProgress = true
+        lastBackupError = nil
+        beginBackupProgress(at: .uploading, progress: max(backupProgress, 0.45))
+        updateStatusLabel()
+    }
+
     private func handleExportFinished() {
         guard !hasConfirmedBackup else { return }
+        isExportInProgress = false
         lastBackupError = nil
+        beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
         if awaitingExportAfterSave || localEntryCount > 0 {
             confirmBackupFromCloudKit()
         }
@@ -224,6 +321,9 @@ final class CloudSyncStatusService {
 
     private func handleExportFailed(_ message: String?) {
         guard awaitingExportAfterSave || localEntryCount > 0 else { return }
+        isExportInProgress = false
+        backupPhase = .stalled
+        backupProgress = max(backupProgress, 0.5)
         lastBackupError = message ?? "iCloud upload failed. Keep Ebb open on Wi‑Fi and try again."
         isVerifyingBackup = false
         updateStatusLabel()
@@ -233,11 +333,14 @@ final class CloudSyncStatusService {
         guard isCloudKitSyncActive, !hasConfirmedBackup else { return }
         awaitingExportAfterSave = true
         lastBackupError = nil
+        verificationStep = 0
         if localEntryCount == 0 {
             localEntryCount = 1
         }
         clearStaleNoBackupStateIfNeeded()
+        beginBackupProgress(at: .savedLocally, progress: 0.2)
         updateStatusLabel()
+        CloudKitSyncKicker.kick()
         scheduleBackupVerification()
     }
 
@@ -245,27 +348,40 @@ final class CloudSyncStatusService {
         verificationTask?.cancel()
         verificationTask = nil
         isVerifyingBackup = false
+        isExportInProgress = false
         awaitingExportAfterSave = false
         hasConfirmedBackup = true
         lastBackupError = nil
+        backupPhase = .backedUp
+        backupProgress = 1
+        verificationStep = verificationStepCount
         clearStaleNoBackupStateIfNeeded()
         updateStatusLabel()
     }
 
     private func scheduleBackupVerification() {
         verificationTask?.cancel()
+        let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
+        verificationStepCount = retryDelaysSeconds.count
         verificationTask = Task {
             isVerifyingBackup = true
+            if backupPhase == .savedLocally {
+                beginBackupProgress(at: .uploading, progress: max(backupProgress, 0.25))
+            }
             updateStatusLabel()
 
-            let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
-            for delay in retryDelaysSeconds {
+            for (index, delay) in retryDelaysSeconds.enumerated() {
                 try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 guard !Task.isCancelled, localEntryCount > 0, !hasConfirmedBackup else {
                     isVerifyingBackup = false
                     updateStatusLabel()
                     return
                 }
+
+                verificationStep = index + 1
+                let confirmingProgress = 0.85 + (Double(index + 1) / Double(retryDelaysSeconds.count)) * 0.14
+                beginBackupProgress(at: .confirming, progress: max(backupProgress, confirmingProgress))
+                updateStatusLabel()
 
                 if await verifyBackupHandler() {
                     confirmBackupFromCloudKit()
@@ -274,10 +390,35 @@ final class CloudSyncStatusService {
             }
 
             isVerifyingBackup = false
+            isExportInProgress = false
             if awaitingExportAfterSave, localEntryCount > 0 {
-                lastBackupError = "Upload is taking longer than expected. Keep Ebb open on Wi‑Fi."
+                backupPhase = .stalled
+                backupProgress = max(backupProgress, 0.9)
+                lastBackupError = "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
             }
             updateStatusLabel()
+        }
+    }
+
+    private func beginBackupProgress(at phase: CloudBackupPhase, progress: Double) {
+        backupPhase = phase
+        backupProgress = min(max(progress, 0), 1)
+    }
+
+    private static func makeAccountSummary(for status: CKAccountStatus) -> String {
+        switch status {
+        case .available:
+            return "Signed in to iCloud on this iPhone"
+        case .noAccount:
+            return "Not signed in — open Settings → Apple Account → iCloud"
+        case .restricted:
+            return "iCloud is restricted on this device"
+        case .temporarilyUnavailable:
+            return "iCloud is temporarily unavailable"
+        case .couldNotDetermine:
+            return "Checking iCloud account…"
+        @unknown default:
+            return "iCloud unavailable"
         }
     }
 
@@ -304,6 +445,15 @@ final class CloudSyncStatusService {
     }
 
     private func updateStatusLabel() {
+        if hasConfirmedBackup {
+            backupPhase = .backedUp
+            backupProgress = 1
+        } else if localEntryCount == 0, backupPhase != .stalled {
+            backupPhase = .idle
+            backupProgress = 0
+            verificationStep = 0
+        }
+
         statusLabel = Self.makeStatusLabel(
             storageMode: storageMode,
             accountStatus: accountStatus,

@@ -169,10 +169,17 @@ struct CloudRestoreMonitoringTests {
         service.setAccountStatusForTesting(.available)
         NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
         #expect(service.statusLabel == "Backing up to iCloud…")
+        #expect(service.backupPhase == .savedLocally)
+        #expect(service.backupProgress == 0.2)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportStarted, object: nil)
+        #expect(service.backupPhase == .uploading)
+        #expect(service.isExportInProgress == true)
 
         NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
         #expect(service.hasConfirmedBackup == true)
         #expect(service.statusLabel == "Backed up · iCloud")
+        #expect(service.backupProgress == 1)
     }
 
     @Test func exportEventConfirmsBackupWithLocalEntries() {
@@ -204,6 +211,36 @@ struct CloudRestoreMonitoringTests {
 
         #expect(service.hasConfirmedBackup == false)
         #expect(service.statusLabel == "Backing up to iCloud…")
+    }
+
+    @Test func retryBackupAttemptRestartsProgress() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { false }
+        service.setBackupPhaseForTesting(.stalled)
+        service.setBackupProgressForTesting(0.9)
+        service.noteEntryCount(1)
+
+        service.retryBackupAttempt()
+
+        #expect(service.backupPhase == .savedLocally)
+        #expect(service.backupProgress == 0.2)
+        #expect(service.lastBackupError == nil)
+    }
+
+    @Test func exportFailureMarksBackupStalled() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+
+        NotificationCenter.default.post(
+            name: .ebbCloudKitExportFailed,
+            object: nil,
+            userInfo: ["error": "Network unavailable"]
+        )
+
+        #expect(service.backupPhase == .stalled)
+        #expect(service.lastBackupError == "Network unavailable")
     }
 }
 
