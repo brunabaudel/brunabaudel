@@ -126,6 +126,7 @@ struct TapLogView: View {
         }
 
         try? modelContext.save()
+        LocalEntrySaveNotifier.notifySaved()
         dismiss()
     }
 

@@ -3,6 +3,7 @@ import SwiftData
 
 @main
 struct EbbApp: App {
+    @UIApplicationDelegateAdaptor(EbbAppDelegate.self) private var appDelegate
     /// Loaded once at launch; the schema is bundled, so failure means a broken
     /// build — surfaced on the debug screen rather than crashing.
     private let schemaLoadResult = Result { try SchemaConfig.load() }

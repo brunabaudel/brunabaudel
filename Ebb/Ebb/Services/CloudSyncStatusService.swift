@@ -27,6 +27,7 @@ final class CloudSyncStatusService {
     /// True after CloudKit export succeeds or records are verified in iCloud.
     private(set) var hasConfirmedBackup = false
     private(set) var isVerifyingBackup = false
+    private(set) var lastBackupError: String?
 
     /// True when entries are actively syncing through CloudKit on this launch.
     var isCloudKitSyncActive: Bool {
@@ -38,8 +39,11 @@ final class CloudSyncStatusService {
     private var verificationTask: Task<Void, Never>?
     private var importObserver: NSObjectProtocol?
     private var exportObserver: NSObjectProtocol?
+    private var exportFailedObserver: NSObjectProtocol?
+    private var localSaveObserver: NSObjectProtocol?
     private var cloudImportCompleted = false
     private var localEntryCount = 0
+    private var awaitingExportAfterSave = false
     private var verifyBackupHandler: @Sendable () async -> Bool
 
     init(
@@ -83,6 +87,30 @@ final class CloudSyncStatusService {
             guard let self else { return }
             MainActor.assumeIsolated {
                 self.handleExportFinished()
+            }
+        }
+
+        exportFailedObserver = NotificationCenter.default.addObserver(
+            forName: .ebbCloudKitExportFailed,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                self.handleExportFailed(
+                    notification.userInfo?["error"] as? String
+                )
+            }
+        }
+
+        localSaveObserver = NotificationCenter.default.addObserver(
+            forName: .ebbLocalEntrySaved,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                self.handleLocalEntrySaved()
             }
         }
     }
@@ -187,15 +215,39 @@ final class CloudSyncStatusService {
     }
 
     private func handleExportFinished() {
-        guard localEntryCount > 0, !hasConfirmedBackup else { return }
-        confirmBackupFromCloudKit()
+        guard !hasConfirmedBackup else { return }
+        lastBackupError = nil
+        if awaitingExportAfterSave || localEntryCount > 0 {
+            confirmBackupFromCloudKit()
+        }
+    }
+
+    private func handleExportFailed(_ message: String?) {
+        guard awaitingExportAfterSave || localEntryCount > 0 else { return }
+        lastBackupError = message ?? "iCloud upload failed. Keep Ebb open on Wi‑Fi and try again."
+        isVerifyingBackup = false
+        updateStatusLabel()
+    }
+
+    private func handleLocalEntrySaved() {
+        guard isCloudKitSyncActive, !hasConfirmedBackup else { return }
+        awaitingExportAfterSave = true
+        lastBackupError = nil
+        if localEntryCount == 0 {
+            localEntryCount = 1
+        }
+        clearStaleNoBackupStateIfNeeded()
+        updateStatusLabel()
+        scheduleBackupVerification()
     }
 
     private func confirmBackupFromCloudKit() {
         verificationTask?.cancel()
         verificationTask = nil
         isVerifyingBackup = false
+        awaitingExportAfterSave = false
         hasConfirmedBackup = true
+        lastBackupError = nil
         clearStaleNoBackupStateIfNeeded()
         updateStatusLabel()
     }
@@ -222,6 +274,9 @@ final class CloudSyncStatusService {
             }
 
             isVerifyingBackup = false
+            if awaitingExportAfterSave, localEntryCount > 0 {
+                lastBackupError = "Upload is taking longer than expected. Keep Ebb open on Wi‑Fi."
+            }
             updateStatusLabel()
         }
     }
