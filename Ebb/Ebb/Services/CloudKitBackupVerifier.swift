@@ -23,6 +23,10 @@ enum CloudKitBackupVerifier {
     static func verifyBackup(
         containerIdentifier: String = CloudSyncStatusService.containerIdentifier
     ) async -> CloudKitBackupVerificationResult {
+        guard AppRuntime.shouldUseCloudKitSync else {
+            return .notFound
+        }
+
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
         var changeToken: CKServerChangeToken?
         var moreComing = true

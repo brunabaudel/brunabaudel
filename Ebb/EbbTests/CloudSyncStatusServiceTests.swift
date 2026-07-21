@@ -165,6 +165,7 @@ struct CloudRestoreMonitoringTests {
     @Test func exportEventDoesNotConfirmWithoutPendingSave() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
         service.noteEntryCount(1)
 
         NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)

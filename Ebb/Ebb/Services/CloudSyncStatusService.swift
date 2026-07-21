@@ -375,6 +375,7 @@ final class CloudSyncStatusService {
         exportWatchdogTask?.cancel()
         let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
         verificationStepCount = retryDelaysSeconds.count
+        let verify = verifyBackupHandler
         exportWatchdogTask = Task {
             isVerifyingBackup = true
             if backupPhase == .savedLocally {
@@ -400,7 +401,7 @@ final class CloudSyncStatusService {
                 beginBackupProgress(at: .confirming, progress: max(backupProgress, confirmingProgress))
                 updateStatusLabel()
 
-                switch await verifyBackupHandler() {
+                switch await verify() {
                 case .confirmed:
                     confirmBackupFromCloudKit()
                     return
@@ -415,13 +416,15 @@ final class CloudSyncStatusService {
                 beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.99))
                 lastBackupError =
                     "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
-                scheduleExtendedBackupVerification()
+                scheduleExtendedBackupVerification(verify: verify)
             }
             updateStatusLabel()
         }
     }
 
-    private func scheduleExtendedBackupVerification() {
+    private func scheduleExtendedBackupVerification(
+        verify: @escaping @Sendable () async -> CloudKitBackupVerificationResult
+    ) {
         exportWatchdogTask?.cancel()
         exportWatchdogTask = Task {
             isVerifyingBackup = true
@@ -442,7 +445,7 @@ final class CloudSyncStatusService {
                     return
                 }
 
-                if await verifyBackupHandler() == .confirmed {
+                if await verify() == .confirmed {
                     confirmBackupFromCloudKit()
                     return
                 }
