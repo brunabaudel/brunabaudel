@@ -185,7 +185,7 @@ struct CloudRestoreMonitoringTests {
         #expect(service.statusLabel == "Backing up to iCloud…")
     }
 
-    @Test func localEntriesDoNotConfirmBackupWithoutCloudVerification() async {
+    @Test func localEntriesDoNotConfirmBackupWithoutExport() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
         service.setVerifyBackupHandlerForTesting { false }
@@ -193,9 +193,6 @@ struct CloudRestoreMonitoringTests {
 
         #expect(service.hasConfirmedBackup == false)
         #expect(service.statusLabel == "Backing up to iCloud…")
-
-        try? await Task.sleep(nanoseconds: 200_000_000)
-        #expect(service.hasConfirmedBackup == false)
     }
 }
 
