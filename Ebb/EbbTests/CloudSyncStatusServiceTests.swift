@@ -152,7 +152,7 @@ struct CloudRestoreMonitoringTests {
     @Test func backupVerificationConfirmsWhenCloudHasRecords() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { true }
+        service.setVerifyBackupHandlerForTesting { .confirmed }
         service.noteEntryCount(1)
         #expect(service.statusLabel == "Backing up to iCloud…")
 
@@ -206,7 +206,7 @@ struct CloudRestoreMonitoringTests {
     @Test func localEntriesDoNotConfirmBackupWithoutExport() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { false }
+        service.setVerifyBackupHandlerForTesting { .notFound }
         service.noteEntryCount(2)
 
         #expect(service.hasConfirmedBackup == false)
@@ -216,7 +216,7 @@ struct CloudRestoreMonitoringTests {
     @Test func retryBackupAttemptRestartsProgress() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { false }
+        service.setVerifyBackupHandlerForTesting { .notFound }
         service.setBackupPhaseForTesting(.stalled)
         service.setBackupProgressForTesting(0.9)
         service.noteEntryCount(1)
@@ -265,6 +265,57 @@ struct CloudRestoreMonitoringTests {
         #expect(service.backupPhase == .stalled)
         #expect(service.hasConfirmedBackup == false)
         #expect(service.isVerifyingBackup == false)
+    }
+
+    @Test func verificationTimeoutStaysConfirmingBeforeExtendedChecksFinish() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        service.noteEntryCount(1)
+
+        for _ in 0..<80 where service.backupPhase == .idle || service.isVerifyingBackup {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(service.backupPhase == .confirming)
+        #expect(service.hasConfirmedBackup == false)
+        #expect(service.lastBackupError?.contains("Upload is taking longer than expected") == true)
+    }
+
+    @Test func verificationTimeoutRecoversWhenExportFinishes() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        service.noteEntryCount(1)
+
+        for _ in 0..<80 where service.backupPhase == .idle || service.isVerifyingBackup {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.backupPhase == .backedUp)
+        #expect(service.backupProgress == 1)
+    }
+
+    @Test func verificationExhaustionAllowsExportRecovery() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        service.noteEntryCount(1)
+
+        for _ in 0..<200 where !service.hasConfirmedBackup && service.backupPhase != .stalled {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(service.backupPhase == .stalled)
+        #expect(service.hasConfirmedBackup == false)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.backupPhase == .backedUp)
     }
 }
 
