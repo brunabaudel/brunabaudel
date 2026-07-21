@@ -149,12 +149,35 @@ struct CloudRestoreMonitoringTests {
         #expect(service.importFinishedGeneration == before + 1)
     }
 
-    @Test func backupVerificationConfirmsWhenCloudHasRecords() async {
+    @Test func exportEventConfirmsBackupAfterPendingSave() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { true }
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+        #expect(service.hasConfirmedBackup == false)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.statusLabel == "Backed up · iCloud")
+        #expect(service.backupProgress == 1)
+    }
+
+    @Test func exportEventDoesNotConfirmWithoutPendingSave() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
         service.noteEntryCount(1)
-        #expect(service.statusLabel == "Backing up to iCloud…")
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == false)
+    }
+
+    @Test func zoneVerificationConfirmsExistingBackup() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .confirmed }
+        service.noteEntryCount(1)
 
         for _ in 0..<100 where !service.hasConfirmedBackup {
             try? await Task.sleep(nanoseconds: 20_000_000)
@@ -162,6 +185,20 @@ struct CloudRestoreMonitoringTests {
 
         #expect(service.hasConfirmedBackup == true)
         #expect(service.statusLabel == "Backed up · iCloud")
+    }
+
+    @Test func verificationTimeoutStallsWhenZoneHasNoRecords() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+
+        for _ in 0..<200 where !service.hasConfirmedBackup && service.backupPhase != .stalled {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(service.hasConfirmedBackup == false)
+        #expect(service.backupPhase == .stalled)
     }
 
     @Test func localSaveNotificationConfirmsAfterExport() {
@@ -182,11 +219,11 @@ struct CloudRestoreMonitoringTests {
         #expect(service.backupProgress == 1)
     }
 
-    @Test func exportEventConfirmsBackupWithLocalEntries() {
+    @Test func exportEventConfirmsBackupWithLocalEntriesAfterSave() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
         service.setRestorePhaseForTesting(.noBackupFound)
-        service.noteEntryCount(1)
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
         #expect(service.statusLabel == "Backing up to iCloud…")
 
         NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
@@ -203,11 +240,15 @@ struct CloudRestoreMonitoringTests {
         #expect(service.statusLabel == "Backing up to iCloud…")
     }
 
-    @Test func localEntriesDoNotConfirmBackupWithoutExport() {
+    @Test func localEntriesDoNotConfirmBackupWithoutExportOrZoneMatch() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { false }
+        service.setVerifyBackupHandlerForTesting { .notFound }
         service.noteEntryCount(2)
+
+        for _ in 0..<80 where service.isVerifyingBackup {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
 
         #expect(service.hasConfirmedBackup == false)
         #expect(service.statusLabel == "Backing up to iCloud…")
@@ -216,7 +257,6 @@ struct CloudRestoreMonitoringTests {
     @Test func retryBackupAttemptRestartsProgress() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting { false }
         service.setBackupPhaseForTesting(.stalled)
         service.setBackupProgressForTesting(0.9)
         service.noteEntryCount(1)

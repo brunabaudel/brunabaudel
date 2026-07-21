@@ -34,7 +34,7 @@ final class CloudSyncStatusService {
     private(set) var restorePhase: CloudRestorePhase = .idle
     /// Bumped when CloudKit import finishes so views can re-check restore state.
     private(set) var importFinishedGeneration = 0
-    /// True after CloudKit export succeeds or records are verified in iCloud.
+    /// True after SwiftData's CloudKit export succeeds for a pending save, or zone fetch finds records.
     private(set) var hasConfirmedBackup = false
     private(set) var isVerifyingBackup = false
     private(set) var lastBackupError: String?
@@ -83,7 +83,7 @@ final class CloudSyncStatusService {
 
     private let container: CKContainer?
     private var restoreTimeoutTask: Task<Void, Never>?
-    private var verificationTask: Task<Void, Never>?
+    private var exportWatchdogTask: Task<Void, Never>?
     private var importObserver: NSObjectProtocol?
     private var exportObserver: NSObjectProtocol?
     private var exportStartedObserver: NSObjectProtocol?
@@ -92,7 +92,9 @@ final class CloudSyncStatusService {
     private var cloudImportCompleted = false
     private var localEntryCount = 0
     private var awaitingExportAfterSave = false
-    private var verifyBackupHandler: @Sendable () async -> Bool
+    /// True only when CloudKit export explicitly failed — blocks silent auto-recovery.
+    private var stalledDueToExportFailure = false
+    private var verifyBackupHandler: @Sendable () async -> CloudKitBackupVerificationResult
 
     init(
         storageMode: AppStorageMode = .localFallback,
@@ -100,7 +102,7 @@ final class CloudSyncStatusService {
     ) {
         self.storageMode = storageMode
         verifyBackupHandler = {
-            await CloudKitBackupVerifier.hasBackupRecords(containerIdentifier: containerIdentifier)
+            await CloudKitBackupVerifier.verifyBackup(containerIdentifier: containerIdentifier)
         }
         if AppRuntime.shouldUseCloudKitSync {
             container = CKContainer(identifier: containerIdentifier)
@@ -191,7 +193,9 @@ final class CloudSyncStatusService {
         updateStatusLabel()
     }
 
-    func setVerifyBackupHandlerForTesting(_ handler: @escaping @Sendable () async -> Bool) {
+    func setVerifyBackupHandlerForTesting(
+        _ handler: @escaping @Sendable () async -> CloudKitBackupVerificationResult
+    ) {
         verifyBackupHandler = handler
     }
 
@@ -229,6 +233,7 @@ final class CloudSyncStatusService {
     func retryBackupAttempt() {
         guard isCloudKitSyncActive, localEntryCount > 0, !hasConfirmedBackup else { return }
         awaitingExportAfterSave = true
+        stalledDueToExportFailure = false
         lastBackupError = nil
         isExportInProgress = false
         verificationStep = 0
@@ -310,21 +315,25 @@ final class CloudSyncStatusService {
     }
 
     private func handleExportFinished() {
-        guard !hasConfirmedBackup, backupPhase != .stalled else { return }
+        guard !hasConfirmedBackup, !stalledDueToExportFailure else { return }
         isExportInProgress = false
         lastBackupError = nil
+
+        // Only a post-save export confirms backup. Export can succeed with no pending
+        // changes while local entries still haven't reached iCloud.
+        guard awaitingExportAfterSave else { return }
+
         beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
-        if awaitingExportAfterSave || localEntryCount > 0 {
-            confirmBackupFromCloudKit()
-        }
+        confirmBackupFromCloudKit()
     }
 
     private func handleExportFailed(_ message: String?) {
         guard awaitingExportAfterSave || localEntryCount > 0 else { return }
-        verificationTask?.cancel()
-        verificationTask = nil
+        exportWatchdogTask?.cancel()
+        exportWatchdogTask = nil
         isExportInProgress = false
         isVerifyingBackup = false
+        stalledDueToExportFailure = true
         backupPhase = .stalled
         backupProgress = max(backupProgress, 0.5)
         lastBackupError = message ?? CloudKitUserMessage.backupFailure(from: nil)
@@ -347,8 +356,8 @@ final class CloudSyncStatusService {
     }
 
     private func confirmBackupFromCloudKit() {
-        verificationTask?.cancel()
-        verificationTask = nil
+        exportWatchdogTask?.cancel()
+        exportWatchdogTask = nil
         isVerifyingBackup = false
         isExportInProgress = false
         awaitingExportAfterSave = false
@@ -361,11 +370,13 @@ final class CloudSyncStatusService {
         updateStatusLabel()
     }
 
+    /// Waits for export after save, and verifies existing backups via CloudKit zone fetch.
     private func scheduleBackupVerification() {
-        verificationTask?.cancel()
+        exportWatchdogTask?.cancel()
         let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
         verificationStepCount = retryDelaysSeconds.count
-        verificationTask = Task {
+        let verify = verifyBackupHandler
+        exportWatchdogTask = Task {
             isVerifyingBackup = true
             if backupPhase == .savedLocally {
                 beginBackupProgress(at: .uploading, progress: max(backupProgress, 0.25))
@@ -379,7 +390,7 @@ final class CloudSyncStatusService {
                     updateStatusLabel()
                     return
                 }
-                guard backupPhase != .stalled else {
+                guard !stalledDueToExportFailure, backupPhase != .stalled else {
                     isVerifyingBackup = false
                     updateStatusLabel()
                     return
@@ -390,24 +401,60 @@ final class CloudSyncStatusService {
                 beginBackupProgress(at: .confirming, progress: max(backupProgress, confirmingProgress))
                 updateStatusLabel()
 
-                if await verifyBackupHandler() {
-                    guard backupPhase != .stalled else {
-                        isVerifyingBackup = false
-                        updateStatusLabel()
-                        return
-                    }
+                switch await verify() {
+                case .confirmed:
+                    confirmBackupFromCloudKit()
+                    return
+                case .notFound, .transientFailure:
+                    break
+                }
+            }
+
+            isVerifyingBackup = false
+            isExportInProgress = false
+            if awaitingExportAfterSave, localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure {
+                beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.99))
+                lastBackupError =
+                    "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
+                scheduleExtendedBackupVerification(verify: verify)
+            }
+            updateStatusLabel()
+        }
+    }
+
+    private func scheduleExtendedBackupVerification(
+        verify: @escaping @Sendable () async -> CloudKitBackupVerificationResult
+    ) {
+        exportWatchdogTask?.cancel()
+        exportWatchdogTask = Task {
+            isVerifyingBackup = true
+            updateStatusLabel()
+
+            for _ in 0..<Self.extendedVerificationAttemptCount {
+                try? await Task.sleep(
+                    nanoseconds: UInt64(Self.extendedVerificationIntervalSeconds * 1_000_000_000)
+                )
+                guard !Task.isCancelled, localEntryCount > 0, !hasConfirmedBackup else {
+                    isVerifyingBackup = false
+                    updateStatusLabel()
+                    return
+                }
+                guard !stalledDueToExportFailure else {
+                    isVerifyingBackup = false
+                    updateStatusLabel()
+                    return
+                }
+
+                if await verify() == .confirmed {
                     confirmBackupFromCloudKit()
                     return
                 }
             }
 
             isVerifyingBackup = false
-            isExportInProgress = false
-            if awaitingExportAfterSave, localEntryCount > 0, backupPhase != .stalled {
+            if awaitingExportAfterSave, localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure {
                 backupPhase = .stalled
-                backupProgress = max(backupProgress, 0.9)
-                lastBackupError =
-                    "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
+                backupProgress = max(backupProgress, 0.99)
             }
             updateStatusLabel()
         }
@@ -437,6 +484,14 @@ final class CloudSyncStatusService {
 
     private static var verificationRetryDelaysSeconds: [Double] {
         AppRuntime.isRunningTests ? [0.01, 0.01, 0.01, 0.01, 0.01] : [3, 8, 15, 30, 60]
+    }
+
+    private static var extendedVerificationIntervalSeconds: Double {
+        AppRuntime.isRunningTests ? 0.01 : 30
+    }
+
+    private static var extendedVerificationAttemptCount: Int {
+        AppRuntime.isRunningTests ? 2 : 10
     }
 
     private func startRestoreTimeout() {
