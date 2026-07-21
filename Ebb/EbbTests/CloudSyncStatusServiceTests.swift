@@ -96,7 +96,7 @@ struct CloudSyncStatusLabelTests {
     }
 }
 
-@Suite("Cloud sync restore monitoring")
+@Suite("Cloud sync restore monitoring", .serialized)
 @MainActor
 struct CloudRestoreMonitoringTests {
     @Test func restoreCompletesWhenEntriesAppear() {
@@ -244,16 +244,10 @@ struct CloudRestoreMonitoringTests {
         #expect(service.isVerifyingBackup == false)
     }
 
-    @Test func exportFailureStaysStalledWhileVerificationWouldRun() async {
+    @Test func exportFailureBlocksLaterExportSuccessFromConfirming() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
-        service.setVerifyBackupHandlerForTesting {
-            try? await Task.sleep(nanoseconds: 200_000_000)
-            return false
-        }
         service.noteEntryCount(1)
-
-        try? await Task.sleep(nanoseconds: 30_000_000)
 
         NotificationCenter.default.post(
             name: .ebbCloudKitExportFailed,
@@ -264,10 +258,12 @@ struct CloudRestoreMonitoringTests {
         )
 
         #expect(service.backupPhase == .stalled)
+        #expect(service.hasConfirmedBackup == false)
 
-        try? await Task.sleep(nanoseconds: 300_000_000)
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
 
         #expect(service.backupPhase == .stalled)
+        #expect(service.hasConfirmedBackup == false)
         #expect(service.isVerifyingBackup == false)
     }
 }

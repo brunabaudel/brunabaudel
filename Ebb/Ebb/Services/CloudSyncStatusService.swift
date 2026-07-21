@@ -310,7 +310,7 @@ final class CloudSyncStatusService {
     }
 
     private func handleExportFinished() {
-        guard !hasConfirmedBackup else { return }
+        guard !hasConfirmedBackup, backupPhase != .stalled else { return }
         isExportInProgress = false
         lastBackupError = nil
         beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
@@ -391,6 +391,11 @@ final class CloudSyncStatusService {
                 updateStatusLabel()
 
                 if await verifyBackupHandler() {
+                    guard backupPhase != .stalled else {
+                        isVerifyingBackup = false
+                        updateStatusLabel()
+                        return
+                    }
                     confirmBackupFromCloudKit()
                     return
                 }
