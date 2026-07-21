@@ -45,9 +45,6 @@ struct CloudBackupProgressView: View {
             return "Waiting for iCloud to start the upload."
         }
         let percent = Int((progress * 100).rounded())
-        if percent >= 99, progress < 1 {
-            return "\(percent)% — still confirming. Stay on Wi‑Fi and keep Ebb open."
-        }
         return "\(percent)% — stay on Wi‑Fi until this reaches 100%."
     }
 }
