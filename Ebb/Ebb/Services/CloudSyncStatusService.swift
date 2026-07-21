@@ -24,7 +24,7 @@ final class CloudSyncStatusService {
     private(set) var restorePhase: CloudRestorePhase = .idle
     /// Bumped when CloudKit import finishes so views can re-check restore state.
     private(set) var importFinishedGeneration = 0
-    /// True only after CloudKit confirms records exist for this Apple ID.
+    /// True after CloudKit export succeeds or records are verified in iCloud.
     private(set) var hasConfirmedBackup = false
     private(set) var isVerifyingBackup = false
 
@@ -99,6 +99,11 @@ final class CloudSyncStatusService {
         updateStatusLabel()
     }
 
+    func setRestorePhaseForTesting(_ phase: CloudRestorePhase) {
+        restorePhase = phase
+        updateStatusLabel()
+    }
+
     func setVerifyBackupHandlerForTesting(_ handler: @escaping @Sendable () async -> Bool) {
         verifyBackupHandler = handler
     }
@@ -124,7 +129,11 @@ final class CloudSyncStatusService {
     /// Track local entries and verify backup when data exists but is not confirmed yet.
     func noteEntryCount(_ count: Int) {
         localEntryCount = count
-        guard isCloudKitSyncActive, count > 0, !hasConfirmedBackup else { return }
+        clearStaleNoBackupStateIfNeeded()
+        guard isCloudKitSyncActive, count > 0, !hasConfirmedBackup else {
+            updateStatusLabel()
+            return
+        }
         updateStatusLabel()
         scheduleBackupVerification()
     }
@@ -135,13 +144,14 @@ final class CloudSyncStatusService {
         guard isCloudKitSyncActive else { return }
 
         if entryCount > 0 {
+            clearStaleNoBackupStateIfNeeded()
             if restorePhase == .restoring {
-                hasConfirmedBackup = true
+                confirmBackupFromCloudKit()
                 finishRestoreMonitoring(as: .restored)
-            }
-            if !hasConfirmedBackup {
+            } else if !hasConfirmedBackup {
                 scheduleBackupVerification()
             }
+            updateStatusLabel()
             return
         }
 
@@ -164,6 +174,11 @@ final class CloudSyncStatusService {
 
     // MARK: - Private
 
+    private func clearStaleNoBackupStateIfNeeded() {
+        guard localEntryCount > 0, restorePhase == .noBackupFound else { return }
+        restorePhase = .idle
+    }
+
     private func handleImportFinished() {
         cloudImportCompleted = true
         restoreTimeoutTask?.cancel()
@@ -173,7 +188,16 @@ final class CloudSyncStatusService {
 
     private func handleExportFinished() {
         guard localEntryCount > 0, !hasConfirmedBackup else { return }
-        scheduleBackupVerification()
+        confirmBackupFromCloudKit()
+    }
+
+    private func confirmBackupFromCloudKit() {
+        verificationTask?.cancel()
+        verificationTask = nil
+        isVerifyingBackup = false
+        hasConfirmedBackup = true
+        clearStaleNoBackupStateIfNeeded()
+        updateStatusLabel()
     }
 
     private func scheduleBackupVerification() {
@@ -192,9 +216,7 @@ final class CloudSyncStatusService {
                 }
 
                 if await verifyBackupHandler() {
-                    hasConfirmedBackup = true
-                    isVerifyingBackup = false
-                    updateStatusLabel()
+                    confirmBackupFromCloudKit()
                     return
                 }
             }
@@ -263,9 +285,6 @@ final class CloudSyncStatusService {
             if restorePhase == .restoring {
                 return "Restoring from iCloud…"
             }
-            if restorePhase == .noBackupFound {
-                return "No iCloud backup found"
-            }
             switch accountStatus {
             case .available:
                 if hasConfirmedBackup {
@@ -273,6 +292,9 @@ final class CloudSyncStatusService {
                 }
                 if isVerifyingBackup || localEntryCount > 0 {
                     return "Backing up to iCloud…"
+                }
+                if restorePhase == .noBackupFound {
+                    return "No iCloud backup found"
                 }
                 return "On · iCloud"
             case .noAccount:

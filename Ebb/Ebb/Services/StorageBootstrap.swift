@@ -44,11 +44,13 @@ enum StorageBootstrap {
                 schema: schema,
                 cloudKitDatabase: .private(CloudSyncStatusService.containerIdentifier)
             )
-            if let container = try? ModelContainer(for: schema, configurations: cloudConfiguration) {
+            do {
+                let container = try ModelContainer(for: schema, configurations: cloudConfiguration)
                 CloudKitSyncObserver.register()
                 return Result(container: container, storageMode: .cloudKit)
+            } catch {
+                NSLog("CloudKit ModelContainer unavailable: \(error.localizedDescription)")
             }
-            NSLog("CloudKit ModelContainer unavailable, falling back to local SwiftData storage.")
         }
 
         if let container = localPersistentContainer(schema: schema) {

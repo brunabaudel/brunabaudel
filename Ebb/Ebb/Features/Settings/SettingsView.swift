@@ -94,8 +94,8 @@ struct SettingsView: View {
                 Label("iCloud backup", systemImage: "icloud")
             }
 
-            if cloudSyncStatus.restorePhase == .noBackupFound {
-                Text("No backup found for this Apple ID. Wait until Settings shows \"Backed up · iCloud\" before deleting the app — that means your logs are confirmed in iCloud, not just saved on this phone.")
+            if cloudSyncStatus.restorePhase == .noBackupFound && cloudSyncStatus.statusLabel == "No iCloud backup found" {
+                Text("No backup found for this Apple ID yet. Add a log and wait for \"Backed up · iCloud\" before deleting the app.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
@@ -104,8 +104,8 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
-            } else if cloudSyncStatus.isVerifyingBackup {
-                Text("Checking that your logs reached iCloud…")
+            } else if cloudSyncStatus.isVerifyingBackup || cloudSyncStatus.statusLabel == "Backing up to iCloud…" {
+                Text("Keep Ebb open until this shows \"Backed up · iCloud\" — that means your logs reached iCloud.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
