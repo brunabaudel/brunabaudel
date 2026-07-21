@@ -131,6 +131,7 @@ struct ConfirmView: View {
         )
         modelContext.insert(entry)
         try? modelContext.save()
+        LocalEntrySaveNotifier.notifySaved()
         dismiss()
     }
 

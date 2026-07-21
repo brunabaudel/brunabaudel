@@ -105,7 +105,7 @@ struct SettingsView: View {
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
             } else if cloudSyncStatus.isVerifyingBackup || cloudSyncStatus.statusLabel == "Backing up to iCloud…" {
-                Text("Keep Ebb open until this shows \"Backed up · iCloud\" — that means your logs reached iCloud.")
+                Text(cloudSyncStatus.lastBackupError ?? "Keep Ebb open on Wi‑Fi until this shows \"Backed up · iCloud\".")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)

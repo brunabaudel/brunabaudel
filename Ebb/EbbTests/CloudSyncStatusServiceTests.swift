@@ -164,6 +164,17 @@ struct CloudRestoreMonitoringTests {
         #expect(service.statusLabel == "Backed up · iCloud")
     }
 
+    @Test func localSaveNotificationConfirmsAfterExport() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+        #expect(service.statusLabel == "Backing up to iCloud…")
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.statusLabel == "Backed up · iCloud")
+    }
+
     @Test func exportEventConfirmsBackupWithLocalEntries() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
