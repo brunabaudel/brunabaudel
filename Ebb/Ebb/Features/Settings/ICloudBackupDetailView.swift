@@ -92,7 +92,8 @@ struct ICloudBackupDetailView: View {
         }
     }
 
-    private var progressSection: Section<Text, CloudBackupProgressView, EmptyView> {
+    @ViewBuilder
+    private var progressSection: some View {
         Section {
             CloudBackupProgressView(
                 phaseLabel: cloudSyncStatus.backupPhaseLabel,
