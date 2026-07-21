@@ -321,11 +321,13 @@ final class CloudSyncStatusService {
 
     private func handleExportFailed(_ message: String?) {
         guard awaitingExportAfterSave || localEntryCount > 0 else { return }
+        verificationTask?.cancel()
+        verificationTask = nil
         isExportInProgress = false
+        isVerifyingBackup = false
         backupPhase = .stalled
         backupProgress = max(backupProgress, 0.5)
-        lastBackupError = message ?? "iCloud upload failed. Keep Ebb open on Wi‑Fi and try again."
-        isVerifyingBackup = false
+        lastBackupError = message ?? CloudKitUserMessage.backupFailure(from: nil)
         updateStatusLabel()
     }
 
@@ -377,6 +379,11 @@ final class CloudSyncStatusService {
                     updateStatusLabel()
                     return
                 }
+                guard backupPhase != .stalled else {
+                    isVerifyingBackup = false
+                    updateStatusLabel()
+                    return
+                }
 
                 verificationStep = index + 1
                 let confirmingProgress = 0.85 + (Double(index + 1) / Double(retryDelaysSeconds.count)) * 0.14
@@ -391,10 +398,11 @@ final class CloudSyncStatusService {
 
             isVerifyingBackup = false
             isExportInProgress = false
-            if awaitingExportAfterSave, localEntryCount > 0 {
+            if awaitingExportAfterSave, localEntryCount > 0, backupPhase != .stalled {
                 backupPhase = .stalled
                 backupProgress = max(backupProgress, 0.9)
-                lastBackupError = "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
+                lastBackupError =
+                    "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
             }
             updateStatusLabel()
         }

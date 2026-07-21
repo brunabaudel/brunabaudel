@@ -127,12 +127,16 @@ enum CloudKitSyncObserver {
                 if event.succeeded {
                     NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
                 } else {
-                    let error = event.error?.localizedDescription ?? "Unknown export error"
-                    NSLog("CloudKit export failed: \(error)")
+                    let underlyingError = event.error
+                    let message = CloudKitUserMessage.backupFailure(from: underlyingError)
+                    NSLog(
+                        "CloudKit export failed: %@",
+                        underlyingError?.localizedDescription ?? message
+                    )
                     NotificationCenter.default.post(
                         name: .ebbCloudKitExportFailed,
                         object: nil,
-                        userInfo: ["error": error]
+                        userInfo: ["error": message]
                     )
                 }
             default:
