@@ -87,11 +87,36 @@ struct SettingsView: View {
 
     private var privacyStatusSection: some View {
         Section {
-            LabeledContent {
-                Text(cloudSyncStatus.statusLabel)
-                    .foregroundStyle(cloudSyncStatus.isCloudKitSyncActive ? theme.ok : theme.muted)
-            } label: {
-                Label("iCloud backup", systemImage: "icloud")
+            if cloudSyncStatus.isCloudKitSyncActive {
+                NavigationLink {
+                    ICloudBackupDetailView()
+                } label: {
+                    LabeledContent {
+                        Text(cloudSyncStatus.statusLabel)
+                            .foregroundStyle(cloudSyncStatus.isCloudKitSyncActive ? theme.ok : theme.muted)
+                    } label: {
+                        Label("iCloud backup", systemImage: "icloud")
+                    }
+                }
+            } else {
+                LabeledContent {
+                    Text(cloudSyncStatus.statusLabel)
+                        .foregroundStyle(theme.muted)
+                } label: {
+                    Label("iCloud backup", systemImage: "icloud")
+                }
+            }
+
+            if showInlineBackupProgress {
+                CloudBackupProgressView(
+                    phaseLabel: cloudSyncStatus.backupPhaseLabel,
+                    progress: cloudSyncStatus.backupProgress,
+                    verificationStep: cloudSyncStatus.verificationStep,
+                    verificationStepCount: cloudSyncStatus.verificationStepCount,
+                    isIndeterminate: cloudSyncStatus.backupPhase == .uploading
+                        && !cloudSyncStatus.isExportInProgress
+                )
+                .listRowBackground(theme.surface)
             }
 
             if cloudSyncStatus.restorePhase == .noBackupFound && cloudSyncStatus.statusLabel == "No iCloud backup found" {
@@ -103,6 +128,11 @@ struct SettingsView: View {
                 Text("Your logs are confirmed in your private iCloud database. They should return after reinstall on this Apple ID.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
+                    .listRowBackground(theme.surface)
+            } else if showInlineBackupProgress {
+                Text(cloudSyncStatus.lastBackupError ?? "Tap iCloud backup above for details. Stay on Wi‑Fi until progress reaches 100%.")
+                    .font(.footnote)
+                    .foregroundStyle(cloudSyncStatus.lastBackupError == nil ? theme.muted : theme.pain)
                     .listRowBackground(theme.surface)
             } else if cloudSyncStatus.isVerifyingBackup || cloudSyncStatus.statusLabel == "Backing up to iCloud…" {
                 Text(cloudSyncStatus.lastBackupError ?? "Keep Ebb open on Wi‑Fi until this shows \"Backed up · iCloud\".")
@@ -132,6 +162,13 @@ struct SettingsView: View {
             return "No account, ever. Your logs sync to your private iCloud database — Ebb never sees them."
         }
         return "No account, ever. Your logs stay on this device only — Ebb never sees them."
+    }
+
+    private var showInlineBackupProgress: Bool {
+        cloudSyncStatus.isCloudKitSyncActive
+            && (cloudSyncStatus.isBackupInProgress
+                || cloudSyncStatus.backupPhase == .stalled
+                || cloudSyncStatus.statusLabel == "Backing up to iCloud…")
     }
 
     // MARK: - Privacy controls

@@ -105,9 +105,18 @@ enum CloudKitSyncObserver {
             guard
                 let event = notification.userInfo?[
                     NSPersistentCloudKitContainer.eventNotificationUserInfoKey
-                ] as? NSPersistentCloudKitContainer.Event,
-                event.endDate != nil
+                ] as? NSPersistentCloudKitContainer.Event
             else {
+                return
+            }
+
+            if event.endDate == nil {
+                switch event.type {
+                case .export:
+                    NotificationCenter.default.post(name: .ebbCloudKitExportStarted, object: nil)
+                default:
+                    break
+                }
                 return
             }
 
