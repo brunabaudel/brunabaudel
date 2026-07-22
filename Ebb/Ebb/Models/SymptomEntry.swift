@@ -24,6 +24,8 @@ final class SymptomEntry {
     /// JSON-encoded `[String: FieldValue]`. Stored as raw data rather than a
     /// transformable dictionary so migration stays a pure JSON concern.
     var fieldValuesData: Data = Data()
+    /// Internal counter bumped to force CloudKit re-export. Never shown in UI.
+    var iCloudExportToken: Int = 0
     /// Verbatim transcript or typed note. Never rewritten (spec: the user's
     /// own words are kept so they can re-read them).
     var note: String?
