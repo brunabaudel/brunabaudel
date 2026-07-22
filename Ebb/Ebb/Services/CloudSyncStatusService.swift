@@ -164,7 +164,8 @@ final class CloudSyncStatusService {
             guard let self else { return }
             MainActor.assumeIsolated {
                 self.handleExportFailed(
-                    notification.userInfo?["error"] as? String
+                    notification.userInfo?["error"] as? String,
+                    isPartialFailure: notification.userInfo?["isPartialFailure"] as? Bool ?? false
                 )
             }
         }
@@ -332,8 +333,20 @@ final class CloudSyncStatusService {
         confirmBackupFromCloudKit()
     }
 
-    private func handleExportFailed(_ message: String?) {
+    private func handleExportFailed(_ message: String?, isPartialFailure: Bool = false) {
         guard awaitingExportAfterSave || localEntryCount > 0 else { return }
+
+        let friendly = CloudKitUserMessage.sanitize(message)
+            ?? CloudKitUserMessage.backupFailure(from: nil)
+
+        if isPartialFailure {
+            // Some records may have uploaded; keep verifying instead of hard-stalling.
+            lastBackupError = friendly
+            CloudKitSyncKicker.kick()
+            updateStatusLabel()
+            return
+        }
+
         exportWatchdogTask?.cancel()
         exportWatchdogTask = nil
         isExportInProgress = false
@@ -341,7 +354,7 @@ final class CloudSyncStatusService {
         stalledDueToExportFailure = true
         backupPhase = .stalled
         backupProgress = max(backupProgress, 0.5)
-        lastBackupError = message ?? CloudKitUserMessage.backupFailure(from: nil)
+        lastBackupError = friendly
         updateStatusLabel()
     }
 
