@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Ebb
 
-@Suite("Speech capture")
+@Suite("Speech capture", .serialized)
 struct SpeechCaptureTests {
     @Test @MainActor func mockRecognizerStreamsTranscript() async throws {
         let capture = SpeechCapture(provider: MockSpeechRecognizer(
