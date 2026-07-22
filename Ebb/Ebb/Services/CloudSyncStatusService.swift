@@ -97,6 +97,8 @@ final class CloudSyncStatusService {
     private var cloudImportCompleted = false
     private var localEntryCount = 0
     private var awaitingExportAfterSave = false
+    /// True after CloudKit export starts while backup is still pending confirmation.
+    private var sawExportStartForPendingBackup = false
     /// True only when CloudKit export explicitly failed — blocks silent auto-recovery.
     private var stalledDueToExportFailure = false
     private var verifyBackupHandler: @Sendable () async -> CloudKitBackupVerificationResult
@@ -239,6 +241,7 @@ final class CloudSyncStatusService {
     func retryBackupAttempt() {
         guard isCloudKitSyncActive, localEntryCount > 0, !hasConfirmedBackup else { return }
         awaitingExportAfterSave = true
+        sawExportStartForPendingBackup = false
         stalledDueToExportFailure = false
         lastBackupError = nil
         isExportInProgress = false
@@ -260,6 +263,7 @@ final class CloudSyncStatusService {
         if backupPhase == .idle {
             beginBackupProgress(at: .savedLocally, progress: 0.2)
         }
+        CloudKitSyncKicker.kick()
         updateStatusLabel()
         scheduleBackupVerification()
     }
@@ -316,6 +320,9 @@ final class CloudSyncStatusService {
         guard !hasConfirmedBackup else { return }
         isExportInProgress = true
         lastBackupError = nil
+        if awaitingExportAfterSave || isBackupInProgress {
+            sawExportStartForPendingBackup = true
+        }
         beginBackupProgress(at: .uploading, progress: max(backupProgress, 0.45))
         updateStatusLabel()
     }
@@ -329,12 +336,12 @@ final class CloudSyncStatusService {
 
         beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
 
-        if awaitingExportAfterSave {
+        let exportRanForPendingBackup = sawExportStartForPendingBackup && localEntryCount > 0
+        if awaitingExportAfterSave || exportRanForPendingBackup {
             confirmBackupFromCloudKit()
             return
         }
 
-        // Export finished during relaunch confirmation — verify before claiming 100%.
         let verify = verifyBackupHandler
         Task {
             if await verify() == .confirmed {
@@ -371,6 +378,7 @@ final class CloudSyncStatusService {
     private func handleLocalEntrySaved() {
         guard isCloudKitSyncActive, !hasConfirmedBackup else { return }
         awaitingExportAfterSave = true
+        sawExportStartForPendingBackup = false
         lastBackupError = nil
         verificationStep = 0
         if localEntryCount == 0 {
@@ -389,6 +397,7 @@ final class CloudSyncStatusService {
         isVerifyingBackup = false
         isExportInProgress = false
         awaitingExportAfterSave = false
+        sawExportStartForPendingBackup = false
         hasConfirmedBackup = true
         lastBackupError = nil
         backupPhase = .backedUp

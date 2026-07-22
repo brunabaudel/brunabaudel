@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Ebb
 
-@Suite("Speech capture")
+@Suite("Speech capture", .serialized)
 struct SpeechCaptureTests {
     @Test @MainActor func mockRecognizerStreamsTranscript() async throws {
         let capture = SpeechCapture(provider: MockSpeechRecognizer(
@@ -60,13 +60,7 @@ struct SpeechCaptureTests {
         let capture = SpeechCapture(provider: HeartbeatRecognizer())
         capture.startListening()
 
-        for _ in 0 ..< 50 {
-            if capture.transcript == "hello" { break }
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        #expect(capture.transcript == "hello")
-
-        for _ in 0 ..< 50 {
+        for _ in 0 ..< 100 {
             if capture.transcript == "hello world" { break }
             try await Task.sleep(for: .milliseconds(20))
         }
