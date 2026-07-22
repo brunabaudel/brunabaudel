@@ -326,7 +326,7 @@ struct SettingsView: View {
                     Task {
                         // Wait for the toggle animation to finish before Face ID.
                         try? await Task.sleep(for: .milliseconds(400))
-                        await appLock.enableAfterAuthentication()
+                        _ = await appLock.enableAfterAuthentication()
                     }
                 } else {
                     appLock.isEnabled = false

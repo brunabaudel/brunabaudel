@@ -3,7 +3,7 @@ import Foundation
 /// Runtime flags shared by app entry, persistence, and privacy services.
 enum AppRuntime {
     /// Test seam — lets unit tests exercise CloudKit-only code paths on the simulator.
-    static var forceCloudKitSyncForTesting = false
+    nonisolated(unsafe) static var forceCloudKitSyncForTesting = false
 
     static var isRunningTests: Bool {
         let env = ProcessInfo.processInfo.environment

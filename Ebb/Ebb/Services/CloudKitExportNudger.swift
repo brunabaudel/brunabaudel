@@ -19,9 +19,7 @@ enum CloudKitExportNudger {
         isNudging = true
         defer { isNudging = false }
 
-        let descriptor = FetchDescriptor<SymptomEntry>(
-            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-        )
+        let descriptor = FetchDescriptor<SymptomEntry>()
         guard let entries = try? modelContext.fetch(descriptor), !entries.isEmpty else {
             try? modelContext.save()
             return
