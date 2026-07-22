@@ -9,10 +9,6 @@ enum CloudKitBackupVerificationResult: Equatable, Sendable {
 }
 
 /// Confirms symptom entries exist in the Core Data CloudKit mirror zone.
-///
-/// SwiftData record types are not queryable with `NSPredicate(value: true)` unless
-/// `recordName` is indexed in the CloudKit dashboard. Zone-change fetch works without
-/// query indexes and is the reliable way to detect exported `CD_SymptomEntry` records.
 enum CloudKitBackupVerifier {
     static let recordType = "CD_SymptomEntry"
     static let zoneID = CKRecordZone.ID(
@@ -36,6 +32,17 @@ enum CloudKitBackupVerifier {
         containerIdentifier: String
     ) async -> CloudKitBackupVerificationResult {
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
+
+        let zoneResult = await verifyViaZoneChanges(database: database)
+        switch zoneResult {
+        case .confirmed, .transientFailure:
+            return zoneResult
+        case .notFound:
+            return await verifyViaQuery(database: database)
+        }
+    }
+
+    private static func verifyViaZoneChanges(database: CKDatabase) async -> CloudKitBackupVerificationResult {
         var changeToken: CKServerChangeToken?
         var moreComing = true
 
@@ -49,7 +56,7 @@ enum CloudKitBackupVerifier {
 
                 for (_, result) in batch.modificationResultsByID {
                     guard case .success(let modification) = result else { continue }
-                    if isSymptomEntryRecord(modification.record) {
+                    if isBackupRecord(modification.record) {
                         return .confirmed
                     }
                 }
@@ -60,22 +67,51 @@ enum CloudKitBackupVerifier {
             return .notFound
         } catch let error as CKError {
             if isTransient(error) {
-                NSLog("CloudKit backup verification transient: \(error.localizedDescription)")
+                NSLog("CloudKit backup zone verification transient: \(error.localizedDescription)")
                 return .transientFailure
             }
-            NSLog("CloudKit backup verification: \(error.localizedDescription)")
+            NSLog("CloudKit backup zone verification: \(error.localizedDescription)")
             return .transientFailure
         } catch {
-            NSLog("CloudKit backup verification failed: \(error.localizedDescription)")
+            NSLog("CloudKit backup zone verification failed: \(error.localizedDescription)")
             return .transientFailure
         }
     }
 
-    private static func isSymptomEntryRecord(_ record: CKRecord) -> Bool {
+    /// Fallback when zone-change fetch is empty but `recordName` is queryable in the dashboard.
+    private static func verifyViaQuery(database: CKDatabase) async -> CloudKitBackupVerificationResult {
+        let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
+        do {
+            let (matchResults, _) = try await database.records(
+                matching: query,
+                inZoneWith: zoneID,
+                desiredKeys: [],
+                resultsLimit: 1
+            )
+            if matchResults.contains(where: { _, result in
+                if case .success = result { return true }
+                return false
+            }) {
+                return .confirmed
+            }
+            return .notFound
+        } catch let error as CKError {
+            if isTransient(error) {
+                NSLog("CloudKit backup query verification transient: \(error.localizedDescription)")
+                return .transientFailure
+            }
+            NSLog("CloudKit backup query verification: \(error.localizedDescription)")
+            return .notFound
+        } catch {
+            NSLog("CloudKit backup query verification failed: \(error.localizedDescription)")
+            return .notFound
+        }
+    }
+
+    private static func isBackupRecord(_ record: CKRecord) -> Bool {
         if record.recordType == recordType {
             return true
         }
-        // Any Core Data / SwiftData mirror record in the private zone means export worked.
         return record.recordType.hasPrefix("CD_")
     }
 

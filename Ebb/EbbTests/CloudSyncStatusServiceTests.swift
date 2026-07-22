@@ -173,6 +173,18 @@ struct CloudRestoreMonitoringTests {
         #expect(service.hasConfirmedBackup == false)
     }
 
+    @Test func exportEventConfirmsWhenExportRanDuringBackup() {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.noteEntryCount(1)
+
+        NotificationCenter.default.post(name: .ebbCloudKitExportStarted, object: nil)
+        NotificationCenter.default.post(name: .ebbCloudKitExportFinished, object: nil)
+
+        #expect(service.hasConfirmedBackup == true)
+        #expect(service.statusLabel == "Backed up · iCloud")
+    }
+
     @Test func zoneVerificationConfirmsExistingBackup() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
