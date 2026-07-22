@@ -39,7 +39,7 @@ warn about any other distribution certificates on the account (without revoking 
 ## One-time: iCloud container for Phase 8 CloudKit sync
 
 Phase 8 adds CloudKit backup. The App Store profile must include container
-`iCloud.com.bcbs.ebb` (matching `Ebb/Ebb.entitlements`).
+`iCloud.com.bcbs.ebb` (matching `Ebb/Ebb.entitlements` and `Ebb/EbbRelease.entitlements`).
 
 1. Open [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
 2. If missing, click **+** → **iCloud Containers** → create identifier **`iCloud.com.bcbs.ebb`**
@@ -49,6 +49,24 @@ Phase 8 adds CloudKit backup. The App Store profile must include container
 6. Re-run **Actions → TestFlight** on branch **`app/ebb`** (or push a commit). CI regenerates the App Store profile automatically.
 
 CI enables the iCloud capability via API, but Apple still requires the container to be selected on the App ID in the developer portal (cannot be done via API key alone).
+
+Push Notifications only needs the **capability enabled** on the App ID. You do **not** need to create an APNs SSL certificate or Auth Key — CloudKit sends silent pushes through Apple’s servers.
+
+## One-time: deploy CloudKit schema to Production
+
+TestFlight and App Store builds use the **Production** CloudKit environment. Production does **not** inherit your Development schema automatically — you must deploy it once (and again after model changes).
+
+Debug builds (`Ebb.entitlements`) use **Development**; Release/TestFlight builds (`EbbRelease.entitlements`) use **Production** with `aps-environment=production`.
+
+1. Connect an iPhone and run Ebb from **Xcode** (Debug — not TestFlight, not Simulator).
+2. Sign in to iCloud on the device, open Ebb, and **save one symptom log**.
+3. Open [CloudKit Console](https://icloud.developer.apple.com/) → container **`iCloud.com.bcbs.ebb`** → **Development** → **Schema**.
+4. Confirm record types such as **`CD_SymptomEntry`** appear (not just `Users`).
+5. In the left sidebar, click **Deploy Schema Changes…** → deploy to **Production**.
+6. Verify **Production → Schema** shows the same record types.
+7. Install the latest **TestFlight** build, add a log on Wi‑Fi, and confirm **Production → Data** shows records in zone `com.apple.coredata.cloudkit.zone`.
+
+CI runs `ci/verify_release_entitlements.rb` on every TestFlight IPA to ensure `aps-environment` is `production` and the CloudKit container environment is `Production`.
 
 ## GitHub variables
 

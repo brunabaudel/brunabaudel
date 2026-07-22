@@ -157,6 +157,9 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist "$EXPORT_PLIST"
 
+      - name: Verify Release entitlements for CloudKit
+        run: ruby Ebb/ci/verify_release_entitlements.rb "$RUNNER_TEMP/export/Ebb.ipa"
+
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v3
         with:
