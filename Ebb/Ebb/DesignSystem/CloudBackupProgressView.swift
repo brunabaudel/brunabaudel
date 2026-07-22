@@ -9,6 +9,7 @@ struct CloudBackupProgressView: View {
     let verificationStep: Int
     let verificationStepCount: Int
     let isIndeterminate: Bool
+    var isExtendedConfirmation: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -43,6 +44,9 @@ struct CloudBackupProgressView: View {
     private var progressCaption: String {
         if isIndeterminate {
             return "Waiting for iCloud to start the upload."
+        }
+        if isExtendedConfirmation {
+            return "Almost there — iCloud can take a few minutes to confirm. Stay on Wi‑Fi and keep Ebb open."
         }
         let percent = Int((progress * 100).rounded())
         return "\(percent)% — stay on Wi‑Fi until this reaches 100%."

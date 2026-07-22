@@ -306,6 +306,50 @@ struct CloudRestoreMonitoringTests {
         #expect(service.hasConfirmedBackup == false)
         #expect(service.isVerifyingBackup == false)
     }
+
+    @Test func duplicateScheduleCallsDoNotRestartVerification() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        service.noteEntryCount(1)
+
+        #expect(service.isVerifyingBackup == true)
+        let stepAfterFirstSchedule = service.verificationStep
+
+        service.monitorRestore(entryCount: 1)
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        #expect(service.isVerifyingBackup == true)
+        #expect(service.verificationStep == stepAfterFirstSchedule)
+    }
+
+    @Test func extendedConfirmationDetectedAt99Percent() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+
+        for _ in 0..<200 where service.backupProgress < 0.99 {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(service.backupProgress >= 0.99)
+        #expect(service.isInExtendedBackupConfirmation == true)
+    }
+
+    @Test func relaunchWithEntriesRunsExtendedConfirmation() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting { .notFound }
+        service.noteEntryCount(1)
+
+        for _ in 0..<200 where service.backupProgress < 0.99 {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        #expect(service.backupProgress >= 0.99)
+        #expect(service.isInExtendedBackupConfirmation == true)
+    }
 }
 
 @Suite("CloudSyncStatusService")

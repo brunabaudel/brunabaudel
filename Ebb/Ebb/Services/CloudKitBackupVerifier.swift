@@ -27,6 +27,14 @@ enum CloudKitBackupVerifier {
             return .notFound
         }
 
+        return await Task.detached(priority: .utility) {
+            await verifyBackupOnBackgroundThread(containerIdentifier: containerIdentifier)
+        }.value
+    }
+
+    private static func verifyBackupOnBackgroundThread(
+        containerIdentifier: String
+    ) async -> CloudKitBackupVerificationResult {
         let database = CKContainer(identifier: containerIdentifier).privateCloudDatabase
         var changeToken: CKServerChangeToken?
         var moreComing = true
@@ -36,12 +44,12 @@ enum CloudKitBackupVerifier {
                 let batch = try await database.recordZoneChanges(
                     inZoneWith: zoneID,
                     since: changeToken,
-                    resultsLimit: 50
+                    resultsLimit: 100
                 )
 
                 for (_, result) in batch.modificationResultsByID {
                     guard case .success(let modification) = result else { continue }
-                    if modification.record.recordType == recordType {
+                    if isSymptomEntryRecord(modification.record) {
                         return .confirmed
                     }
                 }
@@ -61,6 +69,16 @@ enum CloudKitBackupVerifier {
             NSLog("CloudKit backup verification failed: \(error.localizedDescription)")
             return .transientFailure
         }
+    }
+
+    private static func isSymptomEntryRecord(_ record: CKRecord) -> Bool {
+        if record.recordType == recordType {
+            return true
+        }
+        // SwiftData / Core Data mirror types are prefixed with CD_. Accept the expected
+        // type and close variants so a schema rename does not block confirmation forever.
+        return record.recordType.hasPrefix("CD_")
+            && record.recordType.localizedCaseInsensitiveContains("SymptomEntry")
     }
 
     private static func isTransient(_ error: CKError) -> Bool {

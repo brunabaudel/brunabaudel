@@ -114,7 +114,8 @@ struct SettingsView: View {
                     verificationStep: cloudSyncStatus.verificationStep,
                     verificationStepCount: cloudSyncStatus.verificationStepCount,
                     isIndeterminate: cloudSyncStatus.backupPhase == .uploading
-                        && !cloudSyncStatus.isExportInProgress
+                        && !cloudSyncStatus.isExportInProgress,
+                    isExtendedConfirmation: cloudSyncStatus.isInExtendedBackupConfirmation
                 )
                 .listRowBackground(theme.surface)
             }

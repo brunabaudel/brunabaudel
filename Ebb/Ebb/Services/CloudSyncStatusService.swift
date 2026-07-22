@@ -59,6 +59,11 @@ final class CloudSyncStatusService {
         }
     }
 
+    /// True when initial verification retries finished and extended confirmation is running at ~99%.
+    var isInExtendedBackupConfirmation: Bool {
+        backupProgress >= 0.99 && isVerifyingBackup && !hasConfirmedBackup
+    }
+
     var backupPhaseLabel: String {
         switch backupPhase {
         case .idle:
@@ -239,7 +244,7 @@ final class CloudSyncStatusService {
         verificationStep = 0
         beginBackupProgress(at: .savedLocally, progress: 0.2)
         CloudKitSyncKicker.kick()
-        scheduleBackupVerification()
+        scheduleBackupVerification(forceRestart: true)
         updateStatusLabel()
     }
 
@@ -352,7 +357,7 @@ final class CloudSyncStatusService {
         beginBackupProgress(at: .savedLocally, progress: 0.2)
         updateStatusLabel()
         CloudKitSyncKicker.kick()
-        scheduleBackupVerification()
+        scheduleBackupVerification(forceRestart: true)
     }
 
     private func confirmBackupFromCloudKit() {
@@ -371,7 +376,10 @@ final class CloudSyncStatusService {
     }
 
     /// Waits for export after save, and verifies existing backups via CloudKit zone fetch.
-    private func scheduleBackupVerification() {
+    private func scheduleBackupVerification(forceRestart: Bool = false) {
+        if isVerifyingBackup, !forceRestart {
+            return
+        }
         exportWatchdogTask?.cancel()
         let retryDelaysSeconds = Self.verificationRetryDelaysSeconds
         verificationStepCount = retryDelaysSeconds.count
@@ -400,6 +408,7 @@ final class CloudSyncStatusService {
                 let confirmingProgress = 0.85 + (Double(index + 1) / Double(retryDelaysSeconds.count)) * 0.14
                 beginBackupProgress(at: .confirming, progress: max(backupProgress, confirmingProgress))
                 updateStatusLabel()
+                CloudKitSyncKicker.kick()
 
                 switch await verify() {
                 case .confirmed:
@@ -410,24 +419,16 @@ final class CloudSyncStatusService {
                 }
             }
 
-            isVerifyingBackup = false
-            isExportInProgress = false
-            if awaitingExportAfterSave, localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure {
-                beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.99))
-                lastBackupError =
-                    "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
-                scheduleExtendedBackupVerification(verify: verify)
+            guard localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure else {
+                isVerifyingBackup = false
+                updateStatusLabel()
+                return
             }
-            updateStatusLabel()
-        }
-    }
 
-    private func scheduleExtendedBackupVerification(
-        verify: @escaping @Sendable () async -> CloudKitBackupVerificationResult
-    ) {
-        exportWatchdogTask?.cancel()
-        exportWatchdogTask = Task {
-            isVerifyingBackup = true
+            isExportInProgress = false
+            beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.99))
+            lastBackupError =
+                "Upload is taking longer than expected. Stay on Wi‑Fi, keep Ebb open, or tap Retry backup."
             updateStatusLabel()
 
             for _ in 0..<Self.extendedVerificationAttemptCount {
@@ -445,6 +446,7 @@ final class CloudSyncStatusService {
                     return
                 }
 
+                CloudKitSyncKicker.kick()
                 if await verify() == .confirmed {
                     confirmBackupFromCloudKit()
                     return
@@ -452,9 +454,11 @@ final class CloudSyncStatusService {
             }
 
             isVerifyingBackup = false
-            if awaitingExportAfterSave, localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure {
+            if localEntryCount > 0, !hasConfirmedBackup, !stalledDueToExportFailure {
                 backupPhase = .stalled
                 backupProgress = max(backupProgress, 0.99)
+                lastBackupError =
+                    "Could not confirm your backup in iCloud. Stay on Wi‑Fi, keep Ebb open, and tap Retry backup."
             }
             updateStatusLabel()
         }
