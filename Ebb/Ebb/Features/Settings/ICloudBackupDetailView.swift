@@ -7,7 +7,6 @@ import UIKit
 struct ICloudBackupDetailView: View {
     @Environment(\.theme) private var theme
     @Environment(\.openURL) private var openURL
-    @Environment(\.modelContext) private var modelContext
     @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
 
     var body: some View {
@@ -152,7 +151,6 @@ struct ICloudBackupDetailView: View {
     }
 
     private func retryBackup() {
-        CloudKitExportNudger.nudge(modelContext: modelContext)
         cloudSyncStatus.retryBackupAttempt()
     }
 }
