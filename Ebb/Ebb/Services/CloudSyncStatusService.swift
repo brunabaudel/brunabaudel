@@ -325,12 +325,22 @@ final class CloudSyncStatusService {
         isExportInProgress = false
         lastBackupError = nil
 
-        // Only a post-save export confirms backup. Export can succeed with no pending
-        // changes while local entries still haven't reached iCloud.
-        guard awaitingExportAfterSave else { return }
+        guard awaitingExportAfterSave || isBackupInProgress else { return }
 
         beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
-        confirmBackupFromCloudKit()
+
+        if awaitingExportAfterSave {
+            confirmBackupFromCloudKit()
+            return
+        }
+
+        // Export finished during relaunch confirmation — verify before claiming 100%.
+        let verify = verifyBackupHandler
+        Task {
+            if await verify() == .confirmed {
+                confirmBackupFromCloudKit()
+            }
+        }
     }
 
     private func handleExportFailed(_ message: String?, isPartialFailure: Bool = false) {

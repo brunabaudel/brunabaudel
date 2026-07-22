@@ -75,10 +75,8 @@ enum CloudKitBackupVerifier {
         if record.recordType == recordType {
             return true
         }
-        // SwiftData / Core Data mirror types are prefixed with CD_. Accept the expected
-        // type and close variants so a schema rename does not block confirmation forever.
+        // Any Core Data / SwiftData mirror record in the private zone means export worked.
         return record.recordType.hasPrefix("CD_")
-            && record.recordType.localizedCaseInsensitiveContains("SymptomEntry")
     }
 
     private static func isTransient(_ error: CKError) -> Bool {

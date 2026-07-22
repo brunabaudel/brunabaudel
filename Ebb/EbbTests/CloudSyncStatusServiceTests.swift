@@ -284,7 +284,7 @@ struct CloudRestoreMonitoringTests {
         #expect(service.isVerifyingBackup == false)
     }
 
-    @Test func partialExportFailureKeepsVerificationRunning() {
+    @Test func partialExportFailureKeepsVerificationRunning() async {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)
         service.setVerifyBackupHandlerForTesting {
