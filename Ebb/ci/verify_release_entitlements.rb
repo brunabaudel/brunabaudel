@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "fileutils"
 require "open3"
 require "tmpdir"
 
@@ -15,11 +14,13 @@ Dir.mktmpdir("ebb-ipa-") do |tmpdir|
   app_path = Dir.glob(File.join(tmpdir, "Payload", "*.app")).first
   abort("No .app bundle found inside IPA") unless app_path
 
-  entitlements_path = File.join(tmpdir, "entitlements.plist")
-  _stdout, stderr, status = Open3.capture3(
-    "codesign", "-d", "--entitlements", entitlements_path, app_path
+  entitlements_xml, stderr, status = Open3.capture3(
+    "codesign", "-d", "--entitlements", ":-", app_path
   )
   abort("codesign failed: #{stderr}") unless status.success?
+
+  entitlements_path = File.join(tmpdir, "entitlements.plist")
+  File.write(entitlements_path, entitlements_xml)
 
   read = lambda do |key|
     stdout, stderr, ok = Open3.capture3(
