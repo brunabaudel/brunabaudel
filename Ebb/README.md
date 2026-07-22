@@ -39,6 +39,14 @@ xcodebuild test \
 
 ## Deploy to your iPhone (TestFlight)
 
+**GitHub Actions**
+
 1. Add GitHub secrets/variables (see [TESTFLIGHT_SETUP.md](TESTFLIGHT_SETUP.md))
 2. Go to **Actions → TestFlight → Run workflow**
 3. Install **Ebb** from the TestFlight app on your iPhone
+
+**Codemagic**
+
+1. Complete one-time setup in [CODEMAGIC_SETUP.md](CODEMAGIC_SETUP.md)
+2. Push to branch **`app/ebb`** (or start **Ebb — TestFlight** manually in Codemagic)
+3. Install **Ebbie** from the TestFlight app on your iPhone
