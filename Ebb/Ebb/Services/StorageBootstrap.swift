@@ -129,6 +129,7 @@ enum CloudKitSyncObserver {
                 } else {
                     let underlyingError = event.error
                     let message = CloudKitUserMessage.backupFailure(from: underlyingError)
+                    let isPartialFailure = CloudKitUserMessage.isPartialFailure(underlyingError)
                     NSLog(
                         "CloudKit export failed: %@",
                         underlyingError?.localizedDescription ?? message
@@ -136,7 +137,10 @@ enum CloudKitSyncObserver {
                     NotificationCenter.default.post(
                         name: .ebbCloudKitExportFailed,
                         object: nil,
-                        userInfo: ["error": message]
+                        userInfo: [
+                            "error": message,
+                            "isPartialFailure": isPartialFailure,
+                        ]
                     )
                 }
             default:

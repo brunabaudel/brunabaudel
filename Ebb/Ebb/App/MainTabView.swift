@@ -7,6 +7,7 @@ struct MainTabView: View {
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     @Environment(\.theme) private var theme
+    @Environment(\.modelContext) private var modelContext
     @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
     @State private var selectedTab = AppTab.today
@@ -62,6 +63,9 @@ struct MainTabView: View {
         .onChange(of: entries.count) { _, entryCount in
             cloudSyncStatus.noteEntryCount(entryCount)
             cloudSyncStatus.monitorRestore(entryCount: entryCount)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .ebbRequestCloudKitExport)) { _ in
+            try? modelContext.save()
         }
     }
 }

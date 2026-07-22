@@ -284,6 +284,34 @@ struct CloudRestoreMonitoringTests {
         #expect(service.isVerifyingBackup == false)
     }
 
+    @Test func partialExportFailureKeepsVerificationRunning() async {
+        let service = CloudSyncStatusService(storageMode: .cloudKit)
+        service.setAccountStatusForTesting(.available)
+        service.setVerifyBackupHandlerForTesting {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            return .notFound
+        }
+        NotificationCenter.default.post(name: .ebbLocalEntrySaved, object: nil)
+
+        for _ in 0..<100 where !service.isVerifyingBackup {
+            try? await Task.sleep(nanoseconds: 5_000_000)
+        }
+        #expect(service.isVerifyingBackup == true)
+
+        NotificationCenter.default.post(
+            name: .ebbCloudKitExportFailed,
+            object: nil,
+            userInfo: [
+                "error": "iCloud couldn't finish uploading all of your logs. Stay on Wi‑Fi, keep Ebb open, and tap Retry backup.",
+                "isPartialFailure": true,
+            ]
+        )
+
+        #expect(service.backupPhase != .stalled)
+        #expect(service.isVerifyingBackup == true)
+        #expect(service.lastBackupError?.contains("CKErrorDomain") == false)
+    }
+
     @Test func exportFailureBlocksLaterExportSuccessFromConfirming() {
         let service = CloudSyncStatusService(storageMode: .cloudKit)
         service.setAccountStatusForTesting(.available)

@@ -164,7 +164,8 @@ final class CloudSyncStatusService {
             guard let self else { return }
             MainActor.assumeIsolated {
                 self.handleExportFailed(
-                    notification.userInfo?["error"] as? String
+                    notification.userInfo?["error"] as? String,
+                    isPartialFailure: notification.userInfo?["isPartialFailure"] as? Bool ?? false
                 )
             }
         }
@@ -324,16 +325,38 @@ final class CloudSyncStatusService {
         isExportInProgress = false
         lastBackupError = nil
 
-        // Only a post-save export confirms backup. Export can succeed with no pending
-        // changes while local entries still haven't reached iCloud.
-        guard awaitingExportAfterSave else { return }
+        guard awaitingExportAfterSave || isBackupInProgress else { return }
 
         beginBackupProgress(at: .confirming, progress: max(backupProgress, 0.85))
-        confirmBackupFromCloudKit()
+
+        if awaitingExportAfterSave {
+            confirmBackupFromCloudKit()
+            return
+        }
+
+        // Export finished during relaunch confirmation — verify before claiming 100%.
+        let verify = verifyBackupHandler
+        Task {
+            if await verify() == .confirmed {
+                confirmBackupFromCloudKit()
+            }
+        }
     }
 
-    private func handleExportFailed(_ message: String?) {
+    private func handleExportFailed(_ message: String?, isPartialFailure: Bool = false) {
         guard awaitingExportAfterSave || localEntryCount > 0 else { return }
+
+        let friendly = CloudKitUserMessage.sanitize(message)
+            ?? CloudKitUserMessage.backupFailure(from: nil)
+
+        if isPartialFailure {
+            // Some records may have uploaded; keep verifying instead of hard-stalling.
+            lastBackupError = friendly
+            CloudKitSyncKicker.kick()
+            updateStatusLabel()
+            return
+        }
+
         exportWatchdogTask?.cancel()
         exportWatchdogTask = nil
         isExportInProgress = false
@@ -341,7 +364,7 @@ final class CloudSyncStatusService {
         stalledDueToExportFailure = true
         backupPhase = .stalled
         backupProgress = max(backupProgress, 0.5)
-        lastBackupError = message ?? CloudKitUserMessage.backupFailure(from: nil)
+        lastBackupError = friendly
         updateStatusLabel()
     }
 
