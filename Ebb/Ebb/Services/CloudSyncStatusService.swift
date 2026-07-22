@@ -163,12 +163,11 @@ final class CloudSyncStatusService {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            let errorMessage = notification.userInfo?["error"] as? String
+            let isPartialFailure = notification.userInfo?["isPartialFailure"] as? Bool ?? false
             guard let self else { return }
             MainActor.assumeIsolated {
-                self.handleExportFailed(
-                    notification.userInfo?["error"] as? String,
-                    isPartialFailure: notification.userInfo?["isPartialFailure"] as? Bool ?? false
-                )
+                self.handleExportFailed(errorMessage, isPartialFailure: isPartialFailure)
             }
         }
 
