@@ -19,9 +19,9 @@ enum AppRuntime {
             return true
         }
         #if targetEnvironment(simulator)
-        false
+        return false
         #else
-        !isRunningTests
+        return !isRunningTests
         #endif
     }
 }
