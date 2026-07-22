@@ -66,6 +66,8 @@ Debug builds (`Ebb.entitlements`) use **Development**; Release/TestFlight builds
 6. Verify **Production → Schema** shows the same record types.
 7. Install the latest **TestFlight** build, add a log on Wi‑Fi, and confirm **Production → Data** shows records in zone `com.apple.coredata.cloudkit.zone`.
 
+After app updates that change the SwiftData model, run Ebb once from **Xcode on a device** (Debug), save a log, then **Deploy Schema Changes…** to Production again so fields such as `CD_iCloudExportToken` exist server-side.
+
 CI runs `ci/verify_release_entitlements.rb` on every TestFlight IPA to ensure `aps-environment` is `production` and the CloudKit container environment is `Production`.
 
 ## GitHub variables

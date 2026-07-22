@@ -65,7 +65,7 @@ struct MainTabView: View {
             cloudSyncStatus.monitorRestore(entryCount: entryCount)
         }
         .onReceive(NotificationCenter.default.publisher(for: .ebbRequestCloudKitExport)) { _ in
-            try? modelContext.save()
+            CloudKitExportNudger.nudge(modelContext: modelContext)
         }
     }
 }

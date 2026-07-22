@@ -152,7 +152,7 @@ struct ICloudBackupDetailView: View {
     }
 
     private func retryBackup() {
-        try? modelContext.save()
+        CloudKitExportNudger.nudge(modelContext: modelContext)
         cloudSyncStatus.retryBackupAttempt()
     }
 }

@@ -28,6 +28,7 @@ final class EbbAppDelegate: NSObject, UIApplicationDelegate {
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
+        NSLog("Ebb: received remote notification for CloudKit sync")
         completionHandler(.newData)
     }
 }
