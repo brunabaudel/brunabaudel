@@ -87,60 +87,7 @@ struct SettingsView: View {
 
     private var privacyStatusSection: some View {
         Section {
-            if cloudSyncStatus.isCloudKitSyncActive {
-                NavigationLink {
-                    ICloudBackupDetailView()
-                } label: {
-                    LabeledContent {
-                        Text(cloudSyncStatus.statusLabel)
-                            .foregroundStyle(cloudSyncStatus.isCloudKitSyncActive ? theme.ok : theme.muted)
-                    } label: {
-                        Label("iCloud backup", systemImage: "icloud")
-                    }
-                }
-            } else {
-                LabeledContent {
-                    Text(cloudSyncStatus.statusLabel)
-                        .foregroundStyle(theme.muted)
-                } label: {
-                    Label("iCloud backup", systemImage: "icloud")
-                }
-            }
-
-            if showInlineBackupProgress {
-                CloudBackupProgressView(
-                    phaseLabel: cloudSyncStatus.backupPhaseLabel,
-                    progress: cloudSyncStatus.backupProgress,
-                    verificationStep: cloudSyncStatus.verificationStep,
-                    verificationStepCount: cloudSyncStatus.verificationStepCount,
-                    isIndeterminate: cloudSyncStatus.backupPhase == .uploading
-                        && !cloudSyncStatus.isExportInProgress,
-                    isExtendedConfirmation: cloudSyncStatus.isInExtendedBackupConfirmation
-                )
-                .listRowBackground(theme.surface)
-            }
-
-            if cloudSyncStatus.restorePhase == .noBackupFound && cloudSyncStatus.statusLabel == "No iCloud backup found" {
-                Text("No backup found for this Apple ID yet. Add a log and wait for \"Backed up · iCloud\" before deleting the app.")
-                    .font(.footnote)
-                    .foregroundStyle(theme.muted)
-                    .listRowBackground(theme.surface)
-            } else if cloudSyncStatus.hasConfirmedBackup {
-                Text("Your logs are confirmed in your private iCloud database. They should return after reinstall on this Apple ID.")
-                    .font(.footnote)
-                    .foregroundStyle(theme.muted)
-                    .listRowBackground(theme.surface)
-            } else if showInlineBackupProgress {
-                Text(cloudSyncStatus.lastBackupError ?? "Tap iCloud backup above for details. Stay on Wi‑Fi until progress reaches 100%.")
-                    .font(.footnote)
-                    .foregroundStyle(cloudSyncStatus.lastBackupError == nil ? theme.muted : theme.pain)
-                    .listRowBackground(theme.surface)
-            } else if cloudSyncStatus.isVerifyingBackup || cloudSyncStatus.statusLabel == "Backing up to iCloud…" {
-                Text(cloudSyncStatus.lastBackupError ?? "Keep Ebb open on Wi‑Fi until this shows \"Backed up · iCloud\".")
-                    .font(.footnote)
-                    .foregroundStyle(theme.muted)
-                    .listRowBackground(theme.surface)
-            }
+            iCloudBackupRows
 
             LabeledContent {
                 Text(appLock.lockMethodLabel)
@@ -156,6 +103,91 @@ struct SettingsView: View {
         } header: {
             Text("Privacy")
         }
+    }
+
+    @ViewBuilder
+    private var iCloudBackupRows: some View {
+        LabeledContent {
+            Text(cloudSyncStatus.statusLabel)
+                .foregroundStyle(iCloudStatusColor)
+                .multilineTextAlignment(.trailing)
+        } label: {
+            Label("iCloud backup", systemImage: "icloud")
+        }
+
+        if showInlineBackupProgress {
+            CloudBackupProgressView(
+                phaseLabel: cloudSyncStatus.backupPhaseLabel,
+                progress: cloudSyncStatus.backupProgress,
+                verificationStep: cloudSyncStatus.verificationStep,
+                verificationStepCount: cloudSyncStatus.verificationStepCount,
+                isIndeterminate: cloudSyncStatus.backupPhase == .uploading
+                    && !cloudSyncStatus.isExportInProgress,
+                isExtendedConfirmation: cloudSyncStatus.isInExtendedBackupConfirmation
+            )
+            .listRowBackground(theme.surface)
+        }
+
+        if let message = iCloudBackupMessage {
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(iCloudMessageColor)
+                .fixedSize(horizontal: false, vertical: true)
+                .listRowBackground(theme.surface)
+        }
+
+        if showRetryBackup {
+            Button {
+                cloudSyncStatus.retryBackupAttempt()
+            } label: {
+                Label("Retry backup", systemImage: "arrow.clockwise.icloud")
+            }
+            .listRowBackground(theme.surface)
+        }
+    }
+
+    private var iCloudStatusColor: Color {
+        if cloudSyncStatus.hasConfirmedBackup {
+            theme.ok
+        } else if cloudSyncStatus.backupPhase == .stalled || cloudSyncStatus.lastBackupError != nil {
+            theme.pain
+        } else if cloudSyncStatus.isCloudKitSyncActive {
+            theme.ok
+        } else {
+            theme.muted
+        }
+    }
+
+    private var iCloudBackupMessage: String? {
+        if cloudSyncStatus.restorePhase == .noBackupFound
+            && cloudSyncStatus.statusLabel == "No iCloud backup found" {
+            return "No backup found for this Apple ID yet. Add a log and wait for \"Backed up · iCloud\" before deleting the app."
+        }
+        if cloudSyncStatus.hasConfirmedBackup {
+            return "Your logs are confirmed in your private iCloud database. They should return after reinstall on this Apple ID."
+        }
+        if showInlineBackupProgress {
+            return cloudSyncStatus.lastBackupError
+                ?? "Stay on Wi‑Fi and keep Ebb open until progress reaches 100%."
+        }
+        if cloudSyncStatus.isVerifyingBackup || cloudSyncStatus.statusLabel == "Backing up to iCloud…" {
+            return cloudSyncStatus.lastBackupError
+                ?? "Keep Ebb open on Wi‑Fi until this shows \"Backed up · iCloud\"."
+        }
+        if let lastBackupError = cloudSyncStatus.lastBackupError {
+            return lastBackupError
+        }
+        return nil
+    }
+
+    private var iCloudMessageColor: Color {
+        cloudSyncStatus.lastBackupError == nil ? theme.muted : theme.pain
+    }
+
+    private var showRetryBackup: Bool {
+        cloudSyncStatus.isCloudKitSyncActive
+            && cloudSyncStatus.trackedEntryCount > 0
+            && !cloudSyncStatus.hasConfirmedBackup
     }
 
     private var privacyExplanation: String {

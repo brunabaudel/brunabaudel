@@ -12,12 +12,19 @@ struct CloudBackupProgressView: View {
     var isExtendedConfirmation: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "icloud.and.arrow.up")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.ok)
+                    .accessibilityHidden(true)
+
                 Text(phaseLabel)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(theme.text)
+
                 Spacer(minLength: 8)
+
                 if verificationStep > 0, verificationStepCount > 0, !isIndeterminate {
                     Text("Step \(verificationStep) of \(verificationStepCount)")
                         .font(.caption)
@@ -31,12 +38,15 @@ struct CloudBackupProgressView: View {
             } else {
                 ProgressView(value: progress)
                     .tint(theme.ok)
+                    .animation(.easeInOut(duration: 0.35), value: progress)
             }
 
             Text(progressCaption)
                 .font(.caption)
                 .foregroundStyle(theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(phaseLabel). \(progressCaption)")
     }
