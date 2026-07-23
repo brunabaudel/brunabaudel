@@ -385,7 +385,10 @@ struct SettingsView: View {
     private var trackingSection: some View {
         Section {
             NavigationLink {
-                RemindersSettingsView(reminderPreferences: reminderPreferences)
+                RemindersSettingsView(
+                    schema: schema,
+                    reminderPreferences: reminderPreferences
+                )
             } label: {
                 Label("Reminders", systemImage: "bell")
             }

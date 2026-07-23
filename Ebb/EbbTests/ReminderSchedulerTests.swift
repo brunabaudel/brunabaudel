@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import Ebb
 
@@ -95,5 +96,28 @@ struct OnboardingPreferencesTests {
         #expect(defaults.bool(forKey: "ebb.onboarding.completed"))
         let reloaded = OnboardingPreferences(defaults: defaults)
         #expect(reloaded.hasCompletedOnboarding)
+    }
+}
+
+@Suite("Luteal test data seeder")
+struct LutealTestDataSeederTests {
+    @Test @MainActor func seedMakesTodayLutealDay15() throws {
+        let schema = try SchemaConfig.load()
+        let container = try ModelContainer(
+            for: SymptomEntry.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let cycleService = CycleService(provider: MockCycleDataProvider(status: .notDetermined))
+
+        let result = try LutealTestDataSeeder.seed(
+            schemaVersion: schema.schemaVersion,
+            modelContext: context,
+            cycleService: cycleService
+        )
+
+        #expect(result.cycleDayToday == 15)
+        #expect(result.phaseToday == .luteal)
+        #expect(Calendar.ebbCalendar.isDate(result.nextLutealStart, inSameDayAs: .now))
     }
 }

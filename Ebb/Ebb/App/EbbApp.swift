@@ -56,6 +56,9 @@ struct EbbApp: App {
         if isRunningTests {
             return CycleService(provider: MockCycleDataProvider())
         }
+        if ProcessInfo.processInfo.hasLaunchArgumentMockLutealStartToday {
+            return CycleService(provider: MockCycleDataProvider.lutealStartTodaySample())
+        }
         return CycleService()
     }
 

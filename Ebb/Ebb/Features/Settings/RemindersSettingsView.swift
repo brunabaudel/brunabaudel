@@ -2,13 +2,18 @@ import SwiftData
 import SwiftUI
 
 struct RemindersSettingsView: View {
+    let schema: SchemaConfig
     @Bindable var reminderPreferences: ReminderPreferences
 
     @Environment(\.theme) private var theme
+    @Environment(\.modelContext) private var modelContext
     @Environment(CycleService.self) private var cycleService
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showTimePicker = false
+    #if DEBUG
+    @State private var lutealTestMessage: String?
+    #endif
 
     var body: some View {
         List {
@@ -66,6 +71,10 @@ struct RemindersSettingsView: View {
             } header: {
                 Text("Mid-migraine")
             }
+
+            #if DEBUG
+            lutealTestSection
+            #endif
         }
         .scrollContentBackground(.hidden)
         .background(theme.base)
@@ -95,6 +104,48 @@ struct RemindersSettingsView: View {
             )
         }
     }
+
+    #if DEBUG
+    private var lutealTestSection: some View {
+        Section {
+            Text("Inserts a 5-day period starting 14 days ago so today is luteal day 15. Then set reminder time 1–2 minutes ahead, turn off daily log, and background the app.")
+                .font(.footnote)
+                .foregroundStyle(theme.muted)
+                .listRowBackground(theme.surface)
+
+            Button("Seed mock period for luteal test") {
+                seedLutealTestData()
+            }
+
+            if let lutealTestMessage {
+                Text(lutealTestMessage)
+                    .font(.footnote)
+                    .foregroundStyle(theme.ok)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .listRowBackground(theme.surface)
+            }
+        } header: {
+            Text("Testing")
+        }
+    }
+
+    private func seedLutealTestData() {
+        lutealTestMessage = nil
+        do {
+            let result = try LutealTestDataSeeder.seed(
+                schemaVersion: schema.schemaVersion,
+                modelContext: modelContext,
+                cycleService: cycleService
+            )
+            let dateLabel = result.nextLutealStart.formatted(date: .abbreviated, time: .omitted)
+            lutealTestMessage =
+                "Seeded. Today is cycle day \(result.cycleDayToday) (\(result.phaseToday.displayName)). Next luteal heads-up: \(dateLabel)."
+            rescheduleReminders()
+        } catch {
+            lutealTestMessage = error.localizedDescription
+        }
+    }
+    #endif
 }
 
 private struct ReminderTimePickerSheet: View {
@@ -149,7 +200,10 @@ private struct ReminderTimePickerSheet: View {
 
 #Preview {
     NavigationStack {
-        RemindersSettingsView(reminderPreferences: ReminderPreferences())
+        RemindersSettingsView(
+            schema: try! SchemaConfig.load(),
+            reminderPreferences: ReminderPreferences()
+        )
     }
     .environment(\.theme, .plumEmber)
     .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
