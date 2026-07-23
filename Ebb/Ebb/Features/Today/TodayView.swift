@@ -15,6 +15,7 @@ struct TodayView: View {
     @State private var editingEntry: SymptomEntry?
 
     @Environment(\.symptomClassifier) private var symptomClassifier
+    @Environment(MedicationPreferences.self) private var medicationPreferences
 
     private var cycleSnapshot: CycleSnapshot {
         cycleService.snapshot(for: .now, entries: entries)
@@ -43,7 +44,8 @@ struct TodayView: View {
                     confirmViewModel = ConfirmViewModel(
                         transcript: transcript,
                         schema: schema,
-                        classifier: symptomClassifier
+                        classifier: symptomClassifier,
+                        medicationPreferences: medicationPreferences
                     )
                     showConfirm = true
                 }
@@ -70,7 +72,8 @@ struct TodayView: View {
                     confirmViewModel = ConfirmViewModel(
                         transcript: transcript,
                         schema: schema,
-                        classifier: symptomClassifier
+                        classifier: symptomClassifier,
+                        medicationPreferences: medicationPreferences
                     )
                     showConfirm = true
                 }
@@ -223,6 +226,7 @@ struct TodayView: View {
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
+        .environment(MedicationPreferences())
         .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }
 
@@ -243,5 +247,6 @@ struct TodayView: View {
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(SpeechCapture(provider: MockSpeechRecognizer(transcript: "")))
+        .environment(MedicationPreferences())
         .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }

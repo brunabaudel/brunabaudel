@@ -83,11 +83,15 @@ enum SymptomDataExporter {
     @MainActor
     static func deleteAllData(
         modelContext: ModelContext,
-        preferences: CyclePreferences
+        preferences: CyclePreferences,
+        medicationPreferences: MedicationPreferences? = nil,
+        reminderPreferences: ReminderPreferences? = nil
     ) throws {
         try modelContext.delete(model: SymptomEntry.self)
         try modelContext.save()
         preferences.resetToDefaults()
+        medicationPreferences?.resetToDefaults()
+        reminderPreferences?.resetToDefaults()
     }
 }
 

@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
+    let schema: SchemaConfig
     let schemaLoadResult: Result<SchemaConfig, Error>
 
     @Environment(\.theme) private var theme
@@ -10,6 +11,8 @@ struct SettingsView: View {
     @Environment(AppLockController.self) private var appLock
     @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
     @Environment(EntitlementsService.self) private var entitlements
+    @Environment(MedicationPreferences.self) private var medicationPreferences
+    @Environment(ReminderPreferences.self) private var reminderPreferences
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showDebug = false
@@ -31,6 +34,7 @@ struct SettingsView: View {
                 privacyControlsSection
                 dataSection
                 appearanceSection
+                trackingSection
                 healthKitSection
                 cycleInfoSection
 
@@ -421,7 +425,9 @@ struct SettingsView: View {
         do {
             try SymptomDataExporter.deleteAllData(
                 modelContext: modelContext,
-                preferences: cycleService.preferences
+                preferences: cycleService.preferences,
+                medicationPreferences: medicationPreferences,
+                reminderPreferences: reminderPreferences
             )
         } catch {
             deleteErrorMessage = error.localizedDescription
@@ -433,6 +439,42 @@ struct SettingsView: View {
             try? FileManager.default.removeItem(at: exportURL)
         }
         self.exportURL = nil
+    }
+
+    // MARK: - Tracking
+
+    private var trackingSection: some View {
+        Section {
+            NavigationLink {
+                RemindersSettingsView(
+                    schema: schema,
+                    reminderPreferences: reminderPreferences
+                )
+            } label: {
+                Label("Reminders", systemImage: "bell")
+            }
+
+            NavigationLink {
+                MedicationsSettingsView(
+                    schema: schema,
+                    medicationPreferences: medicationPreferences
+                )
+            } label: {
+                Label {
+                    Text("My medications")
+                } icon: {
+                    Image(systemName: "pills")
+                }
+            }
+
+            NavigationLink {
+                AboutView()
+            } label: {
+                Label("About", systemImage: "info.circle")
+            }
+        } header: {
+            Text("Tracking")
+        }
     }
 
     // MARK: - HealthKit
@@ -516,12 +558,17 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(schemaLoadResult: Result { try SchemaConfig.load() })
+    SettingsView(
+        schema: try! SchemaConfig.load(),
+        schemaLoadResult: Result { try SchemaConfig.load() }
+    )
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(AppLockController())
         .environment(CloudSyncStatusService(storageMode: .localByChoice))
         .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
         .environment(ThemePreferences())
+        .environment(MedicationPreferences())
+        .environment(ReminderPreferences())
         .modelContainer(for: SymptomEntry.self, inMemory: true)
 }
