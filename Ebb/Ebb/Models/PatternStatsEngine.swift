@@ -17,10 +17,20 @@ enum PatternStatsEngine {
 
     struct CycleTimeline: Equatable, Sendable {
         let cycleLength: Int
+        let periodLength: Int
         /// Cycle days (1-based) with a logged migraine in the current cycle.
         let migraineCycleDays: [Int]
         let lutealStartFraction: Double
         let lutealEndFraction: Double
+
+        /// Days 1…periodLength — matches `CalendarCycleOverlay.phase`.
+        var menstrualDayCount: Int { max(periodLength, 1) }
+
+        /// Days after bleeding through ovulation (day 14).
+        var follicularDayCount: Int { max(14 - periodLength, 1) }
+
+        /// Days 15…cycleLength.
+        var lutealDayCount: Int { max(cycleLength - 14, 1) }
     }
 
     struct RankedCount: Equatable, Sendable {
@@ -55,6 +65,7 @@ enum PatternStatsEngine {
         let migraineDays = migraineEntries.compactMap { overlay.cycleDay(for: $0.timestamp) }
         let timeline = CycleTimeline(
             cycleLength: overlay.cycleLength,
+            periodLength: overlay.periodLength,
             migraineCycleDays: Array(Set(migraineDays)).sorted(),
             lutealStartFraction: lutealRange.start,
             lutealEndFraction: lutealRange.end

@@ -31,16 +31,45 @@ struct CycleTimelineView: View {
                     ForEach(timeline.migraineCycleDays, id: \.self) { day in
                         migraineMarker(at: day, width: width)
                     }
-
-                    phaseLabel("menstrual", at: menstrualFraction, width: width, accent: false)
-                    phaseLabel("follicular", at: follicularFraction, width: width, accent: false)
-                    phaseLabel("luteal", at: lutealLabelFraction, width: width, accent: true)
                 }
             }
-            .frame(height: 90)
+            .frame(height: 72)
+
+            phaseLabelsRow
+                .padding(.top, 6)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(timelineAccessibilityLabel)
+    }
+
+    private var phaseLabelsRow: some View {
+        GeometryReader { proxy in
+            let totalDays = CGFloat(
+                timeline.menstrualDayCount
+                    + timeline.follicularDayCount
+                    + timeline.lutealDayCount
+            )
+            let width = proxy.size.width
+
+            HStack(spacing: 0) {
+                phaseLabel(
+                    "menstrual",
+                    width: width * CGFloat(timeline.menstrualDayCount) / totalDays,
+                    accent: false
+                )
+                phaseLabel(
+                    "follicular",
+                    width: width * CGFloat(timeline.follicularDayCount) / totalDays,
+                    accent: false
+                )
+                phaseLabel(
+                    "luteal",
+                    width: width * CGFloat(timeline.lutealDayCount) / totalDays,
+                    accent: true
+                )
+            }
+        }
+        .frame(height: 14)
     }
 
     @ViewBuilder
@@ -57,28 +86,19 @@ struct CycleTimelineView: View {
             .offset(x: width * fraction - 6.5, y: 48)
     }
 
-    private func phaseLabel(_ text: String, at fraction: Double, width: CGFloat, accent: Bool) -> some View {
+    private func phaseLabel(_ text: String, width: CGFloat, accent: Bool) -> some View {
         Text(text)
             .font(.caption2.monospaced())
             .foregroundStyle(accent ? theme.cycle : theme.muted.opacity(0.75))
-            .offset(x: width * fraction, y: 72)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .multilineTextAlignment(.center)
+            .frame(width: max(width, 0), alignment: .center)
     }
 
     private func markerFraction(for cycleDay: Int) -> CGFloat {
         let span = max(timeline.cycleLength - 1, 1)
         return CGFloat(cycleDay - 1) / CGFloat(span)
-    }
-
-    private var menstrualFraction: Double {
-        Double(max(timeline.cycleLength / 7, 2) - 1) / Double(max(timeline.cycleLength - 1, 1))
-    }
-
-    private var follicularFraction: Double {
-        13.0 / Double(max(timeline.cycleLength - 1, 1)) * 0.55
-    }
-
-    private var lutealLabelFraction: Double {
-        min(timeline.lutealStartFraction + 0.18, 0.92)
     }
 
     private var timelineAccessibilityLabel: String {
@@ -94,6 +114,7 @@ struct CycleTimelineView: View {
     CycleTimelineView(
         timeline: PatternStatsEngine.CycleTimeline(
             cycleLength: 28,
+            periodLength: 5,
             migraineCycleDays: [17, 20, 25],
             lutealStartFraction: 0.52,
             lutealEndFraction: 1

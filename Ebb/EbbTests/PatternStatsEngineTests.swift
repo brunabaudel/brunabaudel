@@ -184,6 +184,20 @@ struct PatternStatsEngineTests {
         #expect(!inCycle.contains { $0.timestamp == previousCycle.timestamp })
     }
 
+    @Test func cycleTimelinePhaseSegments() {
+        let timeline = PatternStatsEngine.CycleTimeline(
+            cycleLength: 28,
+            periodLength: 5,
+            migraineCycleDays: [17],
+            lutealStartFraction: 0.52,
+            lutealEndFraction: 1
+        )
+        #expect(timeline.menstrualDayCount == 5)
+        #expect(timeline.follicularDayCount == 9)
+        #expect(timeline.lutealDayCount == 14)
+        #expect(timeline.menstrualDayCount + timeline.follicularDayCount + timeline.lutealDayCount == 28)
+    }
+
     @Test func lutealTimelineRange() {
         let overlay = CalendarCycleOverlay(calendar: calendar, cycleLength: 28, periodLength: 5)
         let range = overlay.lutealTimelineRange()
