@@ -230,8 +230,8 @@ struct PatternsView: View {
     private func attributedCaption(_ text: String) -> AttributedString {
         var result = AttributedString(text)
         if let range = result.range(of: "luteal phase", options: .caseInsensitive) {
-            result[range].swiftUI.foregroundColor = theme.cycle
-            result[range].swiftUI.font = .footnote.weight(.semibold)
+            result[range].foregroundColor = theme.cycle
+            result[range].font = .footnote.weight(.semibold)
         }
         return result
     }
@@ -241,7 +241,7 @@ struct PatternsView: View {
         for trigger in report.topTriggers.prefix(1) {
             let phrase = trigger.label.lowercased()
             if let range = result.range(of: phrase) {
-                result[range].swiftUI.font = .subheadline.weight(.semibold)
+                result[range].font = .subheadline.weight(.semibold)
             }
         }
         return result

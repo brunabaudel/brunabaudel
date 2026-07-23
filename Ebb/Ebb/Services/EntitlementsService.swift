@@ -40,7 +40,8 @@ final class EntitlementsService {
         monthlyProduct != nil || annualProduct != nil || lifetimeProduct != nil
     }
 
-    private nonisolated(unsafe) var updatesTask: Task<Void, Never>?
+    @ObservationIgnored
+    nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
     init(previewIsEbbPlus: Bool = false, listenForUpdates: Bool = true) {
         isEbbPlus = previewIsEbbPlus
