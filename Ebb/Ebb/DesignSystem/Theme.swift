@@ -36,6 +36,13 @@ struct Theme: Equatable, Sendable, Identifiable {
 }
 
 extension Theme {
+    /// True for the one theme that stays free forever.
+    var isFreeDefault: Bool { id == Theme.plumEmber.id }
+
+    static func theme(for id: String) -> Theme? {
+        all.first { $0.id == id }
+    }
+
     /// The free default theme (business plan: never gated).
     static let plumEmber = Theme(
         id: "plum-ember",

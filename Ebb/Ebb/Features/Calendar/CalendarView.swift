@@ -6,6 +6,7 @@ struct CalendarView: View {
 
     @Environment(\.theme) private var theme
     @Environment(CycleService.self) private var cycleService
+    @Environment(EntitlementsService.self) private var entitlements
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var displayMode: CalendarDisplayMode = .month
@@ -13,6 +14,7 @@ struct CalendarView: View {
     @State private var visibleWeekStart = Date.now
     @State private var selectedDay = Date.now
     @State private var editingEntry: SymptomEntry?
+    @State private var showPaywall = false
 
     private var calendar: Calendar { .ebbCalendar }
     private var overlay: CalendarCycleOverlay {
@@ -24,6 +26,9 @@ struct CalendarView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     header
+                    if showHistoryLimitBanner {
+                        historyLimitBanner
+                    }
                     overviewChips
                     displayModeToggle
                     gridSection
@@ -41,12 +46,66 @@ struct CalendarView: View {
             .sheet(item: $editingEntry) { entry in
                 TapLogView(schema: schema, entry: entry)
             }
+            .sheet(isPresented: $showPaywall) {
+                EbbPlusPaywallSheet()
+            }
             .onAppear {
                 let today = calendar.startOfDay(for: .now)
                 selectedDay = today
                 visibleMonth = calendar.startOfMonth(for: today)
                 visibleWeekStart = calendar.startOfWeek(for: today)
+                clampVisibleRangeToHistoryLimit()
             }
+        }
+    }
+
+    private var showHistoryLimitBanner: Bool {
+        !entitlements.isEbbPlus && overlay.anchorPeriodStart != nil && !canNavigateBackward
+    }
+
+    private var historyLimitBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Free history covers your last \(HistoryAccessPolicy.freeCycleLimit) cycles.")
+                .font(.footnote)
+                .foregroundStyle(theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button("Unlock full history with Ebb+") {
+                showPaywall = true
+            }
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(theme.pain)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(theme.line, lineWidth: 1)
+        }
+        .padding(.top, 14)
+    }
+
+    private var canNavigateBackward: Bool {
+        switch displayMode {
+        case .month:
+            guard let previousMonth = calendar.date(byAdding: .month, value: -1, to: visibleMonth) else {
+                return false
+            }
+            return HistoryAccessPolicy.isMonthAccessible(
+                previousMonth,
+                overlay: overlay,
+                isPremium: entitlements.isEbbPlus
+            )
+        case .week:
+            guard let previousWeek = calendar.date(byAdding: .day, value: -7, to: visibleWeekStart) else {
+                return false
+            }
+            return HistoryAccessPolicy.isWeekAccessible(
+                weekStart: previousWeek,
+                overlay: overlay,
+                isPremium: entitlements.isEbbPlus
+            )
         }
     }
 
@@ -62,6 +121,8 @@ struct CalendarView: View {
                     Image(systemName: "chevron.left")
                         .font(.body.weight(.semibold))
                 }
+                .disabled(!canNavigateBackward)
+                .opacity(canNavigateBackward ? 1 : 0.35)
                 .accessibilityLabel("Previous \(displayMode == .month ? "month" : "week")")
 
                 Button { navigateForward() } label: {
@@ -482,6 +543,7 @@ struct CalendarView: View {
     // MARK: - Navigation
 
     private func navigateBackward() {
+        guard canNavigateBackward else { return }
         switch displayMode {
         case .month:
             if let month = calendar.date(byAdding: .month, value: -1, to: visibleMonth) {
@@ -513,6 +575,29 @@ struct CalendarView: View {
             visibleMonth = calendar.startOfMonth(for: selectedDay)
         case .week:
             visibleWeekStart = calendar.startOfWeek(for: selectedDay)
+        }
+        clampVisibleRangeToHistoryLimit()
+    }
+
+    private func clampVisibleRangeToHistoryLimit() {
+        guard !entitlements.isEbbPlus else { return }
+        switch displayMode {
+        case .month:
+            while !HistoryAccessPolicy.isMonthAccessible(
+                visibleMonth,
+                overlay: overlay,
+                isPremium: false
+            ), let next = calendar.date(byAdding: .month, value: 1, to: visibleMonth) {
+                visibleMonth = next
+            }
+        case .week:
+            while !HistoryAccessPolicy.isWeekAccessible(
+                weekStart: visibleWeekStart,
+                overlay: overlay,
+                isPremium: false
+            ), let next = calendar.date(byAdding: .day, value: 7, to: visibleWeekStart) {
+                visibleWeekStart = next
+            }
         }
     }
 
@@ -566,6 +651,7 @@ private extension Calendar {
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider()))
+        .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
 }
 
 #Preview("With data") {
@@ -594,4 +680,5 @@ private extension Calendar {
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider()))
+        .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
 }

@@ -16,9 +16,16 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXBuildFile section */
+		A100000F0000000000000001 /* EbbPlus.storekit in Resources */ = {isa = PBXBuildFile; fileRef = A100000E0000000000000001 /* EbbPlus.storekit */; };
+		A10000100000000000000001 /* StoreKitTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000100000000000000002 /* StoreKitTest.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		A10000020000000000000004 /* Ebb.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ebb.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000020000000000000005 /* EbbTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EbbTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100000E0000000000000001 /* EbbPlus.storekit */ = {isa = PBXFileReference; lastKnownFileType = file.storekit; path = EbbPlus.storekit; sourceTree = "<group>"; };
+		A10000100000000000000002 /* StoreKitTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKitTest.framework; path = System/Library/Frameworks/StoreKitTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +46,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000100000000000000001 /* StoreKitTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +65,7 @@
 			children = (
 				A100000B0000000000000001 /* Ebb */,
 				A100000B0000000000000002 /* EbbTests */,
+				A100000E0000000000000001 /* EbbPlus.storekit */,
 				A10000040000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -126,6 +135,11 @@
 				TargetAttributes = {
 					A10000050000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = {
+								enabled = 1;
+							};
+						};
 					};
 					A10000050000000000000002 = {
 						CreatedOnToolsVersion = 16.0;
@@ -158,6 +172,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A100000F0000000000000001 /* EbbPlus.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

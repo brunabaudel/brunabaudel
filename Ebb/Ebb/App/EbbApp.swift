@@ -13,6 +13,8 @@ struct EbbApp: App {
     @State private var cloudSyncStatus = CloudSyncStatusService(
         storageMode: Self.storageBootstrap.storageMode
     )
+    @State private var entitlements = EntitlementsService(listenForUpdates: !Self.isRunningTests)
+    @State private var themePreferences = ThemePreferences()
     @State private var onboardingPreferences = OnboardingPreferences()
     @State private var medicationPreferences = MedicationPreferences()
     @State private var reminderPreferences = ReminderPreferences()
@@ -20,12 +22,15 @@ struct EbbApp: App {
     var body: some Scene {
         WindowGroup {
             AppLockGate {
-                RootView(schemaLoadResult: schemaLoadResult)
-                    .environment(\.theme, .plumEmber)
+                ThemeHost {
+                    RootView(schemaLoadResult: schemaLoadResult)
+                }
                     .environment(cycleService)
                     .environment(speechCapture)
                     .environment(appLock)
                     .environment(cloudSyncStatus)
+                    .environment(entitlements)
+                    .environment(themePreferences)
                     .environment(onboardingPreferences)
                     .environment(medicationPreferences)
                     .environment(reminderPreferences)
@@ -39,6 +44,7 @@ struct EbbApp: App {
                 )
                 await cycleService.refresh()
                 await cloudSyncStatus.refresh()
+                await entitlements.bootstrap()
             }
         }
         .modelContainer(Self.storageBootstrap.container)
