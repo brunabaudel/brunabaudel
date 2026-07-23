@@ -84,5 +84,8 @@ private enum AppTab: Int {
     )
     .environment(\.theme, .plumEmber)
     .environment(CloudSyncStatusService(storageMode: .cloudKit))
+    .environment(CycleService(provider: MockCycleDataProvider()))
+    .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
+    .environment(ThemePreferences())
     .modelContainer(for: SymptomEntry.self, inMemory: true)
 }

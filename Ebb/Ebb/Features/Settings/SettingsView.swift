@@ -9,10 +9,12 @@ struct SettingsView: View {
     @Environment(CycleService.self) private var cycleService
     @Environment(AppLockController.self) private var appLock
     @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
+    @Environment(EntitlementsService.self) private var entitlements
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showDebug = false
     @State private var showShareSheet = false
+    @State private var showPaywall = false
     @State private var exportURL: URL?
     @State private var exportErrorMessage: String?
     @State private var showDeleteConfirmation = false
@@ -24,9 +26,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                ebbPlusSection
                 privacyStatusSection
                 privacyControlsSection
                 dataSection
+                appearanceSection
                 healthKitSection
                 cycleInfoSection
 
@@ -59,6 +63,9 @@ struct SettingsView: View {
                     ShareSheet(items: [exportURL])
                 }
             }
+            .sheet(isPresented: $showPaywall) {
+                EbbPlusPaywallSheet()
+            }
             .confirmationDialog(
                 "Delete all symptom logs and reset cycle preferences?",
                 isPresented: $showDeleteConfirmation,
@@ -79,6 +86,60 @@ struct SettingsView: View {
             .task {
                 await cycleService.refresh()
                 await cloudSyncStatus.refresh()
+            }
+        }
+    }
+
+    // MARK: - Ebb+
+
+    private var ebbPlusSection: some View {
+        Section {
+            LabeledContent {
+                Text(entitlements.isEbbPlus ? "Active" : "Free")
+                    .foregroundStyle(entitlements.isEbbPlus ? theme.ok : theme.muted)
+            } label: {
+                Label("Ebb+", systemImage: "sparkles")
+            }
+
+            if entitlements.isEbbPlus {
+                Text("Patterns, full history, and all themes are unlocked. Logging stays free forever.")
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
+                    .listRowBackground(theme.surface)
+            } else {
+                Button("Unlock Ebb+") {
+                    showPaywall = true
+                }
+            }
+
+            Button("Restore purchases") {
+                Task {
+                    try? await entitlements.restorePurchases()
+                    if entitlements.isEbbPlus {
+                        showPaywall = false
+                    }
+                }
+            }
+
+            if let lastError = entitlements.lastErrorMessage {
+                Text(lastError)
+                    .font(.footnote)
+                    .foregroundStyle(theme.pain)
+                    .listRowBackground(theme.surface)
+            }
+        } header: {
+            Text("Ebb+")
+        }
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        Section {
+            NavigationLink {
+                AppearanceSettingsView()
+            } label: {
+                Label("Appearance", systemImage: "paintpalette")
             }
         }
     }
@@ -460,5 +521,7 @@ struct SettingsView: View {
         .environment(CycleService(provider: MockCycleDataProvider.lutealSample()))
         .environment(AppLockController())
         .environment(CloudSyncStatusService(storageMode: .localByChoice))
+        .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
+        .environment(ThemePreferences())
         .modelContainer(for: SymptomEntry.self, inMemory: true)
 }

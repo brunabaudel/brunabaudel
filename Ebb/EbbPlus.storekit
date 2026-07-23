@@ -1,0 +1,162 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "EbbPlus",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "59.99",
+      "familyShareable" : false,
+      "internalID" : "6670000003",
+      "localizations" : [
+        {
+          "description" : "Unlock Ebb+ forever — patterns, full history, and all themes.",
+          "displayName" : "Ebb+ Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.bcbs.ebb.plus.lifetime",
+      "referenceName" : "Ebb+ Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_developerTeamID" : "3F274MB2RL",
+    "_locale" : "en_US",
+    "_storefront" : "DEU",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21482999",
+      "localizations" : [
+
+      ],
+      "name" : "Ebb+",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "3.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6670000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Advanced patterns, full history, and all themes.",
+              "displayName" : "Ebb+ Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.bcbs.ebb.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Ebb+ Monthly",
+          "subscriptionGroupID" : "21482999",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "24.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6670000002",
+          "introductoryOffer" : {
+            "internalID" : "6670000004",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Best value — patterns, full history, and all themes.",
+              "displayName" : "Ebb+ Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.bcbs.ebb.plus.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Ebb+ Annual",
+          "subscriptionGroupID" : "21482999",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

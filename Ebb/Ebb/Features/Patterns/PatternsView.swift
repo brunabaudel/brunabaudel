@@ -6,7 +6,10 @@ struct PatternsView: View {
 
     @Environment(\.theme) private var theme
     @Environment(CycleService.self) private var cycleService
+    @Environment(EntitlementsService.self) private var entitlements
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
+
+    @State private var showPaywall = false
 
     private var overlay: CalendarCycleOverlay {
         cycleService.makeOverlay(from: entries)
@@ -20,10 +23,20 @@ struct PatternsView: View {
         )
     }
 
+    private var shouldGatePatterns: Bool {
+        !entitlements.isEbbPlus
+            && report.hasCycleData
+            && report.migraineCountThisCycle > 0
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                if report.hasCycleData && report.migraineCountThisCycle > 0 {
+                if shouldGatePatterns {
+                    PatternsPaywallView {
+                        showPaywall = true
+                    }
+                } else if report.hasCycleData && report.migraineCountThisCycle > 0 {
                     populatedContent
                 } else if report.hasCycleData {
                     waitingForMigrainesContent
@@ -34,6 +47,9 @@ struct PatternsView: View {
             .background(theme.base)
             .foregroundStyle(theme.text)
             .navigationTitle("Patterns")
+            .sheet(isPresented: $showPaywall) {
+                EbbPlusPaywallSheet()
+            }
         }
     }
 
@@ -266,6 +282,7 @@ struct PatternsView: View {
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider()))
+        .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
 }
 
 #Preview("Empty") {
@@ -273,4 +290,5 @@ struct PatternsView: View {
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider()))
+        .environment(EntitlementsService(previewIsEbbPlus: false, listenForUpdates: false))
 }
