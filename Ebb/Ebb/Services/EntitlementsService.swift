@@ -49,8 +49,8 @@ final class EntitlementsService {
             for await result in Transaction.updates {
                 guard let self else { return }
                 if case .verified(let transaction) = result {
+                    await self.refreshEntitlements(including: transaction)
                     await transaction.finish()
-                    await self.refreshEntitlements()
                 }
             }
         }
@@ -119,15 +119,23 @@ final class EntitlementsService {
         }
     }
 
-    func refreshEntitlements() async {
+    func refreshEntitlements(including transaction: Transaction? = nil) async {
         var hasAccess = false
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result else { continue }
-            if EbbPlusProductIDs.all.contains(transaction.productID) {
-                hasAccess = true
-                break
+
+        if let transaction, Self.grantsEbbPlus(transaction) {
+            hasAccess = true
+        }
+
+        if !hasAccess {
+            for await result in Transaction.currentEntitlements {
+                guard case .verified(let transaction) = result else { continue }
+                if Self.grantsEbbPlus(transaction) {
+                    hasAccess = true
+                    break
+                }
             }
         }
+
         isEbbPlus = hasAccess
     }
 
@@ -143,7 +151,16 @@ final class EntitlementsService {
                 throw EntitlementsError.verificationFailed
             }
             await transaction.finish()
-            await refreshEntitlements()
+            await refreshEntitlements(including: transaction)
+
+            if !isEbbPlus {
+                // Intro-offer annual subscriptions can lag in `currentEntitlements`.
+                for delay in [200, 400, 800] {
+                    try? await Task.sleep(for: .milliseconds(delay))
+                    await refreshEntitlements(including: transaction)
+                    if isEbbPlus { break }
+                }
+            }
         case .userCancelled:
             throw EntitlementsError.userCancelled
         case .pending:
@@ -161,5 +178,13 @@ final class EntitlementsService {
             lastErrorMessage = "No active Ebb+ subscription was found for this Apple ID."
             return
         }
+    }
+
+    private static func grantsEbbPlus(_ transaction: Transaction) -> Bool {
+        EbbPlusEntitlementEvaluator.grantsAccess(
+            productID: transaction.productID,
+            revocationDate: transaction.revocationDate,
+            expirationDate: transaction.expirationDate
+        )
     }
 }
