@@ -4,3 +4,8 @@
 # Xcode user-specific data
 **/xcuserdata/
 *.xcuserstate
+
+# Xcode build artifacts
+**/.derivedData/
+DerivedData/
+build/
