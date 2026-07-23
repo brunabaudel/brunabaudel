@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ebb — Patterns screen mocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#0E0B12;--ink:#1A1620;--surface:#241E2C;--raised:#2C2533;--line:#3A3242;
+    --text:#EDE6F0;--muted:#A99FB0;--faint:#776E80;--coral:#E89B8B;--coral-dim:#7d4f48;--lav:#9D8FC7;--lav-dim:#4c4466;--sage:#8FB1A0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased}
+  body{background:var(--page);color:var(--text);font-family:"Figtree",system-ui,sans-serif;line-height:1.45;padding:54px 26px 90px;}
+
+  .head{max-width:1180px;margin:0 auto 44px;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--lav);margin-bottom:16px;}
+  .head h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(30px,5vw,48px);line-height:1.06;letter-spacing:-.01em;}
+  .head h1 em{font-style:italic;color:var(--coral);}
+  .head p{color:var(--muted);max-width:62ch;margin-top:18px;font-size:16px;}
+
+  .legend{max-width:1180px;margin:0 auto 48px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,var(--ink),transparent);display:flex;flex-wrap:wrap;gap:24px 40px;}
+  .legend h4{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;}
+  .legend ul{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);}
+  .legend li::before{content:"·";color:var(--lav);margin-right:8px;font-weight:700;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,330px));gap:46px 38px;justify-content:center;max-width:1180px;margin:0 auto;}
+  .grid.wide{grid-template-columns:repeat(auto-fit,minmax(300px,360px));}
+  .frame-wrap{display:flex;flex-direction:column;gap:14px;}
+  .scr-name{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--lav);padding-left:4px;}
+  .scr-name.hot{color:var(--coral);}
+  .annot{font-size:13px;color:var(--faint);padding-left:4px;max-width:360px;}
+  .annot b{color:var(--muted);font-weight:600;}
+
+  .phone{width:330px;border-radius:46px;background:var(--ink);border:1px solid #312938;box-shadow:0 0 0 9px #16121b,0 30px 70px -30px #000;position:relative;overflow:hidden;}
+  .phone.std{height:715px;}
+  .phone.tall{height:920px;}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:18px;z-index:40;}
+  .statusbar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:12.5px;font-weight:600;color:var(--text);z-index:30;}
+  .statusbar .dots{opacity:.8;font-size:11px;}
+  .screen{position:absolute;inset:0;padding:58px 0 0;display:flex;flex-direction:column;}
+  .screen-scroll{flex:1;overflow:hidden;padding:0 22px 8px;}
+  .screen-scroll.tall{overflow:visible;padding-bottom:22px;}
+
+  .nav-title{font-family:"Figtree",sans-serif;font-size:17px;font-weight:600;text-align:center;padding:0 22px 10px;border-bottom:1px solid transparent;}
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:78px;background:#16121bcc;border-top:1px solid var(--line);backdrop-filter:blur(12px);display:flex;align-items:flex-start;justify-content:space-around;padding:10px 8px 0;z-index:30;}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--faint);min-width:64px;}
+  .tab.on{color:var(--coral);}
+  .tab .ic{font-size:20px;line-height:1;}
+
+  /* patterns content */
+  .pat-h{font-family:"Fraunces",serif;font-size:23px;font-weight:500;padding-top:8px;}
+  .timeline-card{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 18px 16px;}
+  .timeline-card .cap{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;}
+  .timeline-card .cap b{color:var(--lav);font-weight:600;}
+  .tl{position:relative;height:72px;}
+  .tl .axis{position:absolute;left:0;right:0;top:54px;height:2px;background:var(--line);border-radius:2px;}
+  .tl .luteal{position:absolute;top:48px;height:14px;border-radius:7px;background:var(--lav-dim);opacity:.55;}
+  .tl .mk{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--coral);top:48px;box-shadow:0 0 10px -1px var(--coral);border:2px solid var(--ink);}
+  .tl .day0{position:absolute;top:0;font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--faint);}
+  .tl-labels{display:flex;margin-top:6px;gap:0;}
+  .tl-labels span{text-align:center;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint);line-height:1.2;padding:0 1px;}
+  .tl-labels span.accent{color:var(--lav);}
+  .tl-labels.proportional span{flex:0 0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tl-labels.guides span{border:1px dashed #3A3242;border-radius:4px;padding:3px 0;background:#1A1620aa;}
+  .tl-labels.guides span.accent{border-color:var(--lav-dim);background:#241f33aa;}
+
+  /* before/after zoom */
+  .compare-row{max-width:1180px;margin:0 auto 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,360px));gap:38px;justify-content:center;}
+  .compare-card{background:var(--ink);border:1px solid var(--line);border-radius:20px;padding:20px 18px 16px;}
+  .compare-card.bad .tl-labels span{position:absolute;top:72px;font-size:9px;transform:none;text-align:left;padding:0;}
+  .compare-card.bad .tl-labels{position:relative;height:14px;margin-top:0;}
+  .compare-card.bad .tl-labels span:nth-child(1){left:11%;}
+  .compare-card.bad .tl-labels span:nth-child(2){left:26%;}
+  .compare-card.bad .tl-labels span:nth-child(3){left:76%;color:var(--lav);}
+  .compare-card.bad .tl-labels span{position:absolute;width:auto;flex:none;border:none;background:none;}
+  .compare-tag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:14px;}
+  .compare-tag.bad{color:#c97a7a;}
+  .compare-tag.good{color:var(--sage);}
+  .compare-note{font-size:12px;color:var(--faint);margin-top:14px;line-height:1.45;}
+
+  .sec{margin-top:18px;}
+  .sec .lbl{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;}
+  .bar{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
+  .bar .nm{font-size:13px;width:92px;flex:0 0 auto;color:var(--text);}
+  .bar .track{flex:1;height:8px;border-radius:5px;background:#2a2431;overflow:hidden;}
+  .bar .fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--coral-dim),var(--coral));}
+  .bar .n{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);width:24px;text-align:right;}
+
+  .insight-card{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;font-size:14px;line-height:1.45;}
+  .insight-card b{font-weight:600;}
+
+  .relief-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:13px;}
+  .relief-row .stat{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);}
+
+  /* empty */
+  .empty-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 18px 90px;}
+  .empty-icon{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);margin-bottom:14px;}
+  .empty-title{font-family:"Fraunces",serif;font-size:20px;font-weight:500;margin-bottom:8px;}
+  .empty-desc{font-size:13px;color:var(--muted);line-height:1.5;max-width:24ch;}
+  .empty-foot{font-size:12px;color:var(--faint);margin-top:16px;max-width:26ch;line-height:1.45;}
+
+  /* waiting */
+  .wait-note{font-size:13px;color:var(--muted);line-height:1.5;margin-top:16px;}
+  .wait-foot{font-size:12px;color:var(--faint);margin-top:18px;line-height:1.45;}
+
+  /* paywall */
+  .lk-sub{color:var(--muted);font-size:13px;margin-top:4px;}
+  .lk-preview{margin-top:18px;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 18px;overflow:hidden;}
+  .lk-blur{filter:blur(5px);opacity:.55;pointer-events:none;}
+  .lk-blur .cap{font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .lk-blur .bars{display:flex;align-items:flex-end;gap:8px;height:74px;}
+  .lk-blur .bars i{flex:1;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--coral),var(--coral-dim));}
+  .lk-blur .line{height:10px;border-radius:5px;background:var(--lav-dim);margin-top:14px;}
+  .lk-blur .line.s{width:70%;}
+  .lk-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,transparent,#241E2Ccc 55%);}
+  .lk-lock .ic{width:42px;height:42px;border-radius:50%;background:#2e2229;border:1px solid var(--coral);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 18px -4px var(--coral);}
+  .lk-lock .t{font-family:"Fraunces",serif;font-size:15px;}
+  .lk-list{margin-top:22px;display:flex;flex-direction:column;gap:13px;}
+  .lk-item{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;}
+  .lk-item .ck{color:var(--coral);font-weight:700;margin-top:1px;}
+  .lk-item .x{color:var(--muted);}
+  .lk-item .x b{color:var(--text);font-weight:600;}
+  .lk-cta{margin-top:24px;background:var(--coral);color:#2a1714;border-radius:16px;padding:15px;text-align:center;font-weight:700;font-size:15px;}
+  .lk-foot{text-align:center;font-size:11px;color:var(--faint);margin-top:11px;padding-bottom:90px;}
+
+  .scroll-hint{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:center;margin-top:8px;padding-bottom:4px;}
+  .section-tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);background:#2a2028;border:1px solid var(--coral-dim);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle;}
+
+  .footer{max-width:1180px;margin:64px auto 0;padding-top:28px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="kicker">Patterns · Full screen reference</div>
+  <h1>Every state of the <em>Patterns</em> tab.</h1>
+  <p>Mocks match the shipped SwiftUI screen: timeline + triggers + insight + relief (Ebb+ unlocked), the contextual paywall (free user with data), the “waiting for migraines” state, and the no-cycle empty state. Plum &amp; Ember theme. <b style="color:var(--text);font-weight:500;">Timeline labels</b> use proportional columns (5 / 9 / 14 days) — see the close-up below.</p>
+</header>
+
+<section class="compare-row">
+  <div class="frame-wrap">
+    <div class="scr-name hot">Timeline · before (overlapping)</div>
+    <div class="compare-card bad">
+      <div class="compare-tag bad">Before · left-aligned anchors</div>
+      <div class="cap" style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;">Your migraines <b style="color:var(--lav);font-weight:600;">cluster in the luteal phase</b> — the days estrogen drops before your period.</div>
+      <div class="tl">
+        <span class="day0">day 1</span>
+        <div class="axis"></div>
+        <div class="luteal" style="left:52%;right:0;"></div>
+        <div class="mk" style="left:58%"></div>
+        <div class="mk" style="left:68%"></div>
+        <div class="mk" style="left:86%"></div>
+        <div class="tl-labels">
+          <span>menstrual</span>
+          <span>follicular</span>
+          <span>luteal</span>
+        </div>
+      </div>
+      <div class="compare-note"><b style="color:#c97a7a;">menstrual</b> and <b style="color:#c97a7a;">follicular</b> collide on device — labels were pinned to fixed x-offsets with left alignment.</div>
+    </div>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="scr-name hot">Timeline · after (fixed)</div>
+    <div class="compare-card">
+      <div class="compare-tag good">After · proportional columns</div>
+      <div class="cap" style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;">Your migraines <b style="color:var(--lav);font-weight:600;">cluster in the luteal phase</b> — the days estrogen drops before your period.</div>
+      <div class="tl">
+        <span class="day0">day 1</span>
+        <div class="axis"></div>
+        <div class="luteal" style="left:52%;right:0;"></div>
+        <div class="mk" style="left:58%"></div>
+        <div class="mk" style="left:68%"></div>
+        <div class="mk" style="left:86%"></div>
+      </div>
+      <div class="tl-labels proportional guides">
+        <span style="width:17.86%">menstrual</span>
+        <span style="width:32.14%">follicular</span>
+        <span class="accent" style="width:50%">luteal</span>
+      </div>
+      <div class="compare-note">Three columns sized by phase length (5 / 9 / 14 days). Each label centered in its column — matches <code>CycleTimelineView.swift</code>. Dashed boxes are mock guides only.</div>
+    </div>
+  </div>
+</section>
+
+<div class="legend">
+  <div>
+    <h4>Sections (populated)</h4>
+    <ul>
+      <li>Cycle timeline card — caption + luteal band + migraine dots</li>
+      <li>Most-logged triggers — horizontal bars, top 4</li>
+      <li>Insight card — template-driven synthesis</li>
+      <li>Relief effectiveness — meds × helped %</li>
+    </ul>
+  </div>
+  <div>
+    <h4>State logic</h4>
+    <ul>
+      <li>No HealthKit / period → empty</li>
+      <li>Cycle, no migraines → waiting</li>
+      <li>Cycle + migraines, free → paywall</li>
+      <li>Cycle + migraines, Ebb+ → full content</li>
+    </ul>
+  </div>
+</div>
+
+<div class="grid wide">
+
+  <!-- 1 · FULL POPULATED (scroll) -->
+  <div class="frame-wrap">
+    <div class="scr-name hot">01 · Populated · Ebb+ unlocked · full scroll</div>
+    <div class="phone tall">
+      <div class="island"></div>
+      <div class="statusbar"><span>21:20</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+      <div class="screen">
+        <div class="nav-title">Patterns</div>
+        <div class="screen-scroll tall">
+          <div class="pat-h">This cycle</div>
+
+          <div class="timeline-card">
+            <div class="cap">Your migraines <b>cluster in the luteal phase</b> — the days estrogen drops before your period. All 3 this cycle, all luteal.</div>
+            <div class="tl">
+              <span class="day0">day 1</span>
+              <div class="axis"></div>
+              <div class="luteal" style="left:52%;right:0;"></div>
+              <div class="mk" style="left:58%"></div>
+              <div class="mk" style="left:68%"></div>
+              <div class="mk" style="left:86%"></div>
+            </div>
+            <div class="tl-labels proportional">
+              <span style="width:17.86%">menstrual</span>
+              <span style="width:32.14%">follicular</span>
+              <span class="accent" style="width:50%">luteal</span>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="lbl">Most-logged triggers</div>
+            <div class="bar"><span class="nm">Poor sleep</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="n">3</span></div>
+            <div class="bar"><span class="nm">Stress</span><span class="track"><span class="fill" style="width:67%"></span></span><span class="n">2</span></div>
+            <div class="bar"><span class="nm">Skipped meal</span><span class="track"><span class="fill" style="width:33%"></span></span><span class="n">1</span></div>
+          </div>
+
+          <div class="insight-card">All 3 attacks followed <b>poor sleep</b> in the luteal window.</div>
+
+          <div class="sec" style="margin-top:22px;">
+            <div class="lbl">Relief effectiveness</div>
+            <div class="relief-row"><span>Ibuprofen</span><span class="stat">1/2 helped (50%)</span></div>
+            <div class="relief-row"><span>Sumatriptan</span><span class="stat">2/2 helped (100%)</span></div>
+            <div class="relief-row"><span>Rest</span><span class="stat">1× logged</span></div>
+          </div>
+
+          <div class="scroll-hint">↕ scrolls on device</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">􀆮</span>Today</div>
+          <div class="tab"><span class="ic">􀉉</span>Calendar</div>
+          <div class="tab on"><span class="ic">􀐿</span>Patterns</div>
+          <div class="tab"><span class="ic">􀍟</span>Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>The full synthesis screen.</b> Everything the stats engine can surface: phase clustering on the timeline, trigger bars, a plain-language insight, and relief stats. This is what Ebb+ unlocks.</div>
+  </div>
+
+  <!-- 2 · PAYWALL -->
+  <div class="frame-wrap">
+    <div class="scr-name">02 · Paywall · free user, data ready</div>
+    <div class="phone std">
+      <div class="island"></div>
+      <div class="statusbar"><span>21:31</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+      <div class="screen">
+        <div class="nav-title">Patterns</div>
+        <div class="screen-scroll">
+          <div class="pat-h">Your patterns</div>
+          <div class="lk-sub">Enough data — here's what we found.</div>
+
+          <div class="lk-preview">
+            <div class="lk-blur">
+              <div class="cap">Migraines by cycle phase</div>
+              <div class="bars"><i style="height:30%"></i><i style="height:18%"></i><i style="height:24%"></i><i style="height:88%"></i><i style="height:74%"></i><i style="height:62%"></i></div>
+              <div class="line"></div><div class="line s"></div>
+            </div>
+            <div class="lk-lock">
+              <div class="ic">🔒</div>
+              <div class="t">See what's triggering them</div>
+            </div>
+          </div>
+
+          <div class="lk-list">
+            <div class="lk-item"><span class="ck">✓</span><span class="x"><b>Trigger correlation</b> — what actually precedes your attacks</span></div>
+            <div class="lk-item"><span class="ck">✓</span><span class="x"><b>Luteal-window forecast</b> — see the next high-risk days coming</span></div>
+            <div class="lk-item"><span class="ck">✓</span><span class="x"><b>Doctor-ready PDF</b> — bring the pattern to your GP</span></div>
+          </div>
+
+          <div class="lk-cta">Unlock Ebb+</div>
+          <div class="lk-foot">7-day free trial · keep logging free forever</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">􀆮</span>Today</div>
+          <div class="tab"><span class="ic">􀉉</span>Calendar</div>
+          <div class="tab on"><span class="ic">􀐿</span>Patterns</div>
+          <div class="tab"><span class="ic">􀍟</span>Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>Contextual unlock.</b> Shown when there's real pattern data but the user isn't subscribed. The preview is blurred — payoff is visible but locked.</div>
+  </div>
+
+  <!-- 3 · WAITING -->
+  <div class="frame-wrap">
+    <div class="scr-name">03 · Waiting · cycle known, no migraines</div>
+    <div class="phone std">
+      <div class="island"></div>
+      <div class="statusbar"><span>08:15</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+      <div class="screen">
+        <div class="nav-title">Patterns</div>
+        <div class="screen-scroll">
+          <div class="pat-h">This cycle</div>
+          <div class="wait-note">No migraines logged this cycle yet. Patterns will appear as you log.</div>
+
+          <div class="timeline-card" style="margin-top:16px;">
+            <div class="tl" style="margin-top:4px;">
+              <span class="day0">day 1</span>
+              <div class="axis"></div>
+              <div class="luteal" style="left:52%;right:0;"></div>
+            </div>
+            <div class="tl-labels proportional">
+              <span style="width:17.86%">menstrual</span>
+              <span style="width:32.14%">follicular</span>
+              <span class="accent" style="width:50%">luteal</span>
+            </div>
+          </div>
+
+          <div class="wait-foot">Patterns appear after a cycle or two of logging.</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">􀆮</span>Today</div>
+          <div class="tab"><span class="ic">􀉉</span>Calendar</div>
+          <div class="tab on"><span class="ic">􀐿</span>Patterns</div>
+          <div class="tab"><span class="ic">􀍟</span>Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>Honest mid-cycle state.</b> Cycle axis renders (you're on day 18, luteal band visible) but no migraine dots yet. No paywall — nothing to gate.</div>
+  </div>
+
+  <!-- 4 · EMPTY -->
+  <div class="frame-wrap">
+    <div class="scr-name">04 · Empty · no cycle data</div>
+    <div class="phone std">
+      <div class="island"></div>
+      <div class="statusbar"><span>08:30</span><span class="dots">􀙇 􀛨 􀋨</span></div>
+      <div class="screen">
+        <div class="nav-title">Patterns</div>
+        <div class="empty-center">
+          <div class="empty-icon">􀐿</div>
+          <div class="empty-title">Patterns</div>
+          <div class="empty-desc">Log bleeding or connect HealthKit to see how migraines track with your cycle.</div>
+          <div class="empty-foot">Patterns appear after a cycle or two of logging.</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">􀆮</span>Today</div>
+          <div class="tab"><span class="ic">􀉉</span>Calendar</div>
+          <div class="tab on"><span class="ic">􀐿</span>Patterns</div>
+          <div class="tab"><span class="ic">􀍟</span>Settings</div>
+        </div>
+      </div>
+    </div>
+    <div class="annot"><b>First-run empty.</b> No period anchor yet — ContentUnavailableView in the app. Points user to HealthKit or logging a period.</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Matches <code>PatternsView.swift</code> + <code>PatternsPaywallView.swift</code> as of Phase 11. Open this file in a browser alongside the app for redesign work.
+</div>
+
+</body>
+</html>
