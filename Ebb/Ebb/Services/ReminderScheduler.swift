@@ -6,7 +6,7 @@ enum ReminderScheduler {
     static let lutealNotificationID = "ebb.reminder.luteal"
     static let dailyLogNotificationID = "ebb.reminder.dailyLog"
 
-    struct ScheduleInput: Sendable {
+    struct ScheduleInput {
         let preferences: ReminderPreferences
         let overlay: CalendarCycleOverlay
         let entries: [SymptomEntry]

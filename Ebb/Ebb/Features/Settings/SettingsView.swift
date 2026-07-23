@@ -16,9 +16,8 @@ struct SettingsView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showDebug = false
-    @State private var showShareSheet = false
     @State private var showPaywall = false
-    @State private var exportURL: URL?
+    @State private var exportFile: ShareableFile?
     @State private var exportErrorMessage: String?
     @State private var showDeleteConfirmation = false
     @State private var deleteErrorMessage: String?
@@ -62,10 +61,8 @@ struct SettingsView: View {
                         }
                 }
             }
-            .sheet(isPresented: $showShareSheet, onDismiss: cleanupExportFile) {
-                if let exportURL {
-                    ShareSheet(items: [exportURL])
-                }
+            .sheet(item: $exportFile, onDismiss: cleanupExportFile) { file in
+                ShareSheet(items: [file.url])
             }
             .sheet(isPresented: $showPaywall) {
                 EbbPlusPaywallSheet()
@@ -106,7 +103,7 @@ struct SettingsView: View {
             }
 
             if entitlements.isEbbPlus {
-                Text("Patterns, full history, and all themes are unlocked. Logging stays free forever.")
+                Text("Patterns, doctor PDF, full history, and all themes are unlocked. Logging stays free forever.")
                     .font(.footnote)
                     .foregroundStyle(theme.muted)
                     .listRowBackground(theme.surface)
@@ -409,12 +406,12 @@ struct SettingsView: View {
         }
 
         do {
-            exportURL = try SymptomDataExporter.makeTemporaryExportFile(
+            let url = try SymptomDataExporter.makeTemporaryExportFile(
                 entries: entries,
                 schemaVersion: schema.schemaVersion,
                 preferences: cycleService.preferences
             )
-            showShareSheet = true
+            exportFile = ShareableFile(url: url)
         } catch {
             exportErrorMessage = error.localizedDescription
         }
@@ -435,10 +432,10 @@ struct SettingsView: View {
     }
 
     private func cleanupExportFile() {
-        if let exportURL {
-            try? FileManager.default.removeItem(at: exportURL)
+        if let url = exportFile?.url {
+            try? FileManager.default.removeItem(at: url)
         }
-        self.exportURL = nil
+        exportFile = nil
     }
 
     // MARK: - Tracking
@@ -465,6 +462,12 @@ struct SettingsView: View {
                 } icon: {
                     Image(systemName: "pills")
                 }
+            }
+
+            NavigationLink {
+                DoctorExportView(schema: schema)
+            } label: {
+                Label("Bring to your doctor", systemImage: "doc.text")
             }
 
             NavigationLink {

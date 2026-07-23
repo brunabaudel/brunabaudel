@@ -8,7 +8,7 @@ import StoreKitTest
 /// reference does not resolve (the usual cause of empty `Product.products`).
 enum StoreKitLocalTestingBootstrap {
     #if DEBUG
-    private static var session: SKTestSession?
+    nonisolated(unsafe) private static var session: SKTestSession?
     #endif
 
     static func activateIfNeeded() {
@@ -31,7 +31,7 @@ enum StoreKitLocalTestingBootstrap {
         do {
             let testSession = try SKTestSession(contentsOf: url)
             testSession.disableDialogs = false
-            try testSession.clearTransactions()
+            testSession.clearTransactions()
             session = testSession
             NSLog("Ebb StoreKit: activated bundled configuration")
         } catch {
