@@ -25,4 +25,14 @@ struct MockCycleDataProvider: CycleDataProvider {
         let days = (0..<5).compactMap { calendar.date(byAdding: .day, value: $0, to: periodStart) }
         return MockCycleDataProvider(periodDays: Set(days))
     }
+
+    /// Period started 14 days ago — today is luteal day 15 (luteal heads-up fires today).
+    static func lutealStartTodaySample(calendar: Calendar = .ebbCalendar) -> MockCycleDataProvider {
+        let today = calendar.startOfDay(for: .now)
+        guard let periodStart = calendar.date(byAdding: .day, value: -14, to: today) else {
+            return MockCycleDataProvider()
+        }
+        let days = (0..<5).compactMap { calendar.date(byAdding: .day, value: $0, to: periodStart) }
+        return MockCycleDataProvider(periodDays: Set(days))
+    }
 }

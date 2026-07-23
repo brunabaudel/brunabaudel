@@ -6,6 +6,8 @@ enum LaunchArguments {
     static let autoTalkLog = "-AutoTalkLog"
     static let autoConfirmLog = "-AutoConfirmLog"
     static let openTabCalendar = "-OpenTabCalendar"
+    static let skipOnboarding = "-SkipOnboarding"
+    static let mockLutealStartToday = "-MockLutealStartToday"
     static let mockTranscript = "-MockTranscript"
 }
 
@@ -24,6 +26,14 @@ extension ProcessInfo {
 
     var hasLaunchArgumentOpenTabCalendar: Bool {
         arguments.contains(LaunchArguments.openTabCalendar)
+    }
+
+    var hasLaunchArgumentSkipOnboarding: Bool {
+        arguments.contains(LaunchArguments.skipOnboarding)
+    }
+
+    var hasLaunchArgumentMockLutealStartToday: Bool {
+        arguments.contains(LaunchArguments.mockLutealStartToday)
     }
 
     /// Canned transcript for CI screenshots and simulator runs (follows `-MockTranscript`).

@@ -9,8 +9,12 @@ struct MainTabView: View {
     @Environment(\.theme) private var theme
     @Environment(\.modelContext) private var modelContext
     @Environment(CloudSyncStatusService.self) private var cloudSyncStatus
+    @Environment(CycleService.self) private var cycleService
+    @Environment(OnboardingPreferences.self) private var onboardingPreferences
+    @Environment(ReminderPreferences.self) private var reminderPreferences
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
     @State private var selectedTab = AppTab.today
+    @State private var onboardingViewModel = OnboardingViewModel()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -32,7 +36,7 @@ struct MainTabView: View {
                     Label("Patterns", systemImage: "chart.line.uptrend.xyaxis")
                 }
 
-            SettingsView(schemaLoadResult: schemaLoadResult)
+            SettingsView(schema: schema, schemaLoadResult: schemaLoadResult)
                 .tag(AppTab.settings)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
@@ -67,6 +71,45 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .ebbRequestCloudKitExport)) { _ in
             CloudKitExportNudger.nudge(modelContext: modelContext)
         }
+        .fullScreenCover(isPresented: showOnboarding) {
+            OnboardingView(
+                viewModel: onboardingViewModel,
+                onboardingPreferences: onboardingPreferences
+            )
+        }
+        .task {
+            await rescheduleReminders()
+        }
+        .onChange(of: entries.count) { _, _ in
+            Task { await rescheduleReminders() }
+        }
+        .onChange(of: cycleService.lastRefreshed) { _, _ in
+            Task { await rescheduleReminders() }
+        }
+    }
+
+    private var showOnboarding: Binding<Bool> {
+        Binding(
+            get: { !onboardingPreferences.hasCompletedOnboarding },
+            set: { isPresented in
+                if !isPresented {
+                    onboardingPreferences.markCompleted()
+                }
+            }
+        )
+    }
+
+    private func rescheduleReminders() async {
+        guard onboardingPreferences.hasCompletedOnboarding else { return }
+        let overlay = cycleService.makeOverlay(from: entries)
+        await ReminderScheduler.reschedule(
+            input: ReminderScheduler.ScheduleInput(
+                preferences: reminderPreferences,
+                overlay: overlay,
+                entries: entries,
+                now: .now
+            )
+        )
     }
 }
 
@@ -84,5 +127,9 @@ private enum AppTab: Int {
     )
     .environment(\.theme, .plumEmber)
     .environment(CloudSyncStatusService(storageMode: .cloudKit))
+    .environment(CycleService(provider: MockCycleDataProvider()))
+    .environment(OnboardingPreferences())
+    .environment(MedicationPreferences())
+    .environment(ReminderPreferences())
     .modelContainer(for: SymptomEntry.self, inMemory: true)
 }

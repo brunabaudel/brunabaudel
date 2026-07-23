@@ -13,6 +13,9 @@ struct EbbApp: App {
     @State private var cloudSyncStatus = CloudSyncStatusService(
         storageMode: Self.storageBootstrap.storageMode
     )
+    @State private var onboardingPreferences = OnboardingPreferences()
+    @State private var medicationPreferences = MedicationPreferences()
+    @State private var reminderPreferences = ReminderPreferences()
 
     var body: some Scene {
         WindowGroup {
@@ -23,6 +26,9 @@ struct EbbApp: App {
                     .environment(speechCapture)
                     .environment(appLock)
                     .environment(cloudSyncStatus)
+                    .environment(onboardingPreferences)
+                    .environment(medicationPreferences)
+                    .environment(reminderPreferences)
                     .environment(\.symptomClassifier, Self.makeSymptomClassifier())
             }
             .environment(appLock)
@@ -49,6 +55,9 @@ struct EbbApp: App {
     private static func makeCycleService() -> CycleService {
         if isRunningTests {
             return CycleService(provider: MockCycleDataProvider())
+        }
+        if ProcessInfo.processInfo.hasLaunchArgumentMockLutealStartToday {
+            return CycleService(provider: MockCycleDataProvider.lutealStartTodaySample())
         }
         return CycleService()
     }
