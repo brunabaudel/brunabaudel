@@ -66,7 +66,7 @@ capture() {
   shift
   echo "Capturing ${name}..."
   xcrun simctl terminate booted "$BUNDLE_ID" 2>/dev/null || true
-  xcrun simctl launch booted "$BUNDLE_ID" "$@"
+  xcrun simctl launch booted "$BUNDLE_ID" -SkipOnboarding "$@"
   sleep "$SETTLE_SECONDS"
   xcrun simctl io booted screenshot "$SCREENS_DIR/$name.png"
 }

@@ -15,11 +15,18 @@ final class ConfirmViewModel {
     private(set) var classificationFailed = false
 
     private let classifier: any SymptomClassifier
+    private let medicationPreferences: MedicationPreferences?
 
-    init(transcript: String, schema: SchemaConfig, classifier: any SymptomClassifier) {
+    init(
+        transcript: String,
+        schema: SchemaConfig,
+        classifier: any SymptomClassifier,
+        medicationPreferences: MedicationPreferences? = nil
+    ) {
         self.transcript = transcript
         self.schema = schema
         self.classifier = classifier
+        self.medicationPreferences = medicationPreferences
     }
 
     func classifyIfNeeded() async {
@@ -41,7 +48,25 @@ final class ConfirmViewModel {
     }
 
     private func applyClassification(_ classified: [String: FieldValue]) {
-        values = classified
+        var merged = classified
+        applyMedicationPrefill(to: &merged)
+        values = merged
         aiHighlights = classificationHighlights(from: classified)
+    }
+
+    private func applyMedicationPrefill(to values: inout [String: FieldValue]) {
+        guard let medicationPreferences else { return }
+        let allowed = schema.field(forKey: "relief_taken")?.allowedValueKeys ?? []
+        let saved = medicationPreferences.savedReliefKeys.filter { allowed.contains($0) }
+        guard !saved.isEmpty else { return }
+
+        switch values["relief_taken"] {
+        case nil:
+            values["relief_taken"] = .choices(saved)
+        case .choices(let existing) where existing.isEmpty:
+            values["relief_taken"] = .choices(saved)
+        default:
+            break
+        }
     }
 }
