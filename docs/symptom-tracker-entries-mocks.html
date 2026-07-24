@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ebb — Entries screen mocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#0E0B12;--ink:#1A1620;--surface:#241E2C;--raised:#2C2533;--line:#3A3242;
+    --text:#EDE6F0;--muted:#A99FB0;--faint:#776E80;
+    --coral:#E89B8B;--coral-dim:#2E2229;--coral-glow:#7d4f48;
+    --lav:#9D8FC7;--lav-dim:#241F33;--lav-glow:#4c4466;
+    --sage:#8FB1A0;--sage-dim:#1e2a24;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased}
+  body{background:var(--page);color:var(--text);font-family:"Figtree",system-ui,sans-serif;line-height:1.45;padding:54px 26px 90px;}
+
+  .head{max-width:1180px;margin:0 auto 44px;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--lav);margin-bottom:16px;}
+  .head h1{font-family:"Fraunces",serif;font-weight:500;font-size:clamp(30px,5vw,48px);line-height:1.06;letter-spacing:-.01em;}
+  .head h1 em{font-style:italic;color:var(--coral);}
+  .head p{color:var(--muted);max-width:68ch;margin-top:18px;font-size:16px;}
+
+  .legend{max-width:1180px;margin:0 auto 48px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,var(--ink),transparent);display:flex;flex-wrap:wrap;gap:24px 40px;}
+  .legend h4{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;}
+  .legend ul{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);}
+  .legend li::before{content:"·";color:var(--lav);margin-right:8px;font-weight:700;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,330px));gap:46px 38px;justify-content:center;max-width:1180px;margin:0 auto;}
+  .frame-wrap{display:flex;flex-direction:column;gap:14px;}
+  .scr-name{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--lav);padding-left:4px;}
+  .scr-name.hot{color:var(--coral);}
+  .annot{font-size:13px;color:var(--faint);padding-left:4px;max-width:360px;line-height:1.5;}
+  .annot b{color:var(--muted);font-weight:600;}
+
+  .phone{width:330px;border-radius:46px;background:var(--ink);border:1px solid #312938;box-shadow:0 0 0 9px #16121b,0 30px 70px -30px #000;position:relative;overflow:hidden;height:780px;}
+  .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:104px;height:28px;background:#000;border-radius:18px;z-index:40;}
+  .statusbar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:12.5px;font-weight:600;color:var(--text);z-index:30;}
+  .statusbar .dots{opacity:.8;font-size:11px;}
+  .screen{position:absolute;inset:0;padding:58px 0 0;display:flex;flex-direction:column;}
+  .screen-scroll{flex:1;overflow:hidden;padding:0 20px 8px;}
+
+  .tabbar{position:absolute;bottom:0;left:0;right:0;height:78px;background:#16121bcc;border-top:1px solid var(--line);backdrop-filter:blur(12px);display:flex;align-items:flex-start;justify-content:space-around;padding:10px 8px 0;z-index:30;}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--faint);min-width:64px;}
+  .tab.on{color:var(--coral);}
+  .tab .ic{font-size:20px;line-height:1;}
+
+  /* shared Today chrome */
+  .today-h{font-family:"Fraunces",serif;font-size:26px;font-weight:500;padding-top:6px;}
+  .today-date{font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:16px;}
+  .today-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:0;}
+  .today-top .today-date{margin-bottom:16px;}
+  .nav-plus{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:300;line-height:1;color:var(--text);flex-shrink:0;margin-top:6px;box-shadow:0 2px 8px -4px #000;}
+  .fab-talk{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:56px;height:56px;border-radius:50%;background:var(--coral);color:#2a1714;display:flex;align-items:center;justify-content:center;font-size:23px;box-shadow:0 6px 24px -6px var(--coral),0 0 0 1px rgba(42,23,20,.4);z-index:35;}
+  .sec-h{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;}
+
+  /* ── B: Timeline rail ── */
+  .timeline-list{position:relative;padding-left:18px;}
+  .timeline-list::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--coral),var(--lav),var(--line));border-radius:2px;opacity:.5;}
+  .tl-entry{position:relative;margin-bottom:10px;padding:12px 12px 12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;}
+  .tl-entry::before{content:"";position:absolute;left:-17px;top:18px;width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);box-shadow:0 0 8px -1px currentColor;}
+  .tl-entry.pain::before{background:var(--coral);color:var(--coral);}
+  .tl-entry.cycle::before{background:var(--lav);color:var(--lav);}
+  .tl-entry.mixed::before{background:linear-gradient(135deg,var(--coral),var(--lav));color:var(--coral);}
+  .tl-entry .row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .tl-entry .title{font-size:14px;font-weight:600;}
+  .tl-entry .time{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint);}
+  .tl-entry .desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;}
+  .sev-bar{margin-top:8px;height:4px;border-radius:3px;background:#2a2431;overflow:hidden;}
+  .sev-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--coral-glow),var(--coral));}
+  .sev-bar i.s2{width:40%}.sev-bar i.s3{width:60%}.sev-bar i.s4{width:80%}.sev-bar i.s5{width:100%}
+  .marker-row{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+  .marker{font-size:9px;font-family:"JetBrains Mono",monospace;letter-spacing:.04em;padding:3px 7px;border-radius:6px;border:1px solid;}
+  .marker.pain{color:var(--coral);border-color:var(--coral-glow);background:var(--coral-dim);}
+  .marker.cycle{color:var(--lav);border-color:var(--lav-glow);background:var(--lav-dim);}
+  .marker.neutral{color:var(--muted);border-color:var(--line);background:transparent;}
+
+  /* ── D: Day heat strip ── */
+  .day-strip{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;}
+  .day-strip .label{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .heat-row{display:flex;gap:4px;align-items:flex-end;height:36px;}
+  .heat-block{flex:1;border-radius:6px;background:#2a2431;position:relative;min-height:8px;transition:height .2s;}
+  .heat-block.pain{background:var(--coral);opacity:.35;}
+  .heat-block.pain.h2{opacity:.55;height:18px;}
+  .heat-block.pain.h3{opacity:.75;height:26px;}
+  .heat-block.pain.h4{opacity:.9;height:32px;box-shadow:0 0 10px -2px var(--coral);}
+  .heat-block.cycle{background:var(--lav);opacity:.5;height:14px;}
+  .heat-block .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--faint);white-space:nowrap;}
+  .heat-labels{display:flex;justify-content:space-between;margin-top:6px;font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--faint);}
+  .heat-entry{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .heat-entry:last-child{border-bottom:none;padding-bottom:0;}
+  .heat-entry .when{width:54px;flex-shrink:0;padding-top:1px;line-height:1.25;}
+  .heat-entry .when .date{font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--faint);display:block;}
+  .heat-entry .when .date.today{color:var(--muted);}
+  .heat-entry .when .time{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);display:block;margin-top:1px;}
+  .heat-entry .content{flex:1;min-width:0;}
+  .heat-entry .content .t{font-size:13px;font-weight:600;}
+  .heat-entry .content .d{font-size:11px;color:var(--muted);margin-top:2px;}
+  .heat-entry .badge{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+  .heat-entry .badge.pain{background:var(--coral);box-shadow:0 0 6px var(--coral);}
+  .heat-entry .badge.cycle{background:var(--lav);box-shadow:0 0 6px var(--lav);}
+  .heat-entry .when.time-only{width:42px;}
+  .heat-entry .when.time-only .time{margin-top:0;}
+  .log-group{margin-bottom:4px;}
+
+  /* ── Featured (D) ── */
+  .featured-wrap{max-width:1180px;margin:0 auto 56px;display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;justify-content:center;}
+  .featured-copy{max-width:100%;flex:1 1 280px;padding-top:12px;}
+  .featured-copy h2{font-family:"Fraunces",serif;font-size:22px;font-weight:500;margin-bottom:10px;}
+  .featured-copy p{font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:14px;}
+  .featured-copy ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--faint);}
+  .featured-copy li::before{content:"→";color:var(--coral);margin-right:8px;}
+  .featured-phones{display:flex;flex-wrap:wrap;gap:38px;justify-content:center;flex:2 1 660px;}
+  .phone.featured{height:720px;box-shadow:0 0 0 9px #16121b,0 0 0 11px rgba(232,155,139,.18),0 30px 70px -30px #000;}
+  .phone.featured.patterns{height:820px;box-shadow:0 0 0 9px #16121b,0 0 0 11px rgba(157,143,199,.15),0 30px 70px -30px #000;}
+  .pat-h{font-family:"Fraunces",serif;font-size:23px;font-weight:500;padding-top:8px;}
+  .timeline-card-mini{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
+  .timeline-card-mini .cap{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:12px;}
+  .timeline-card-mini .cap b{color:var(--lav);font-weight:600;}
+  .tl-mini{position:relative;height:36px;margin-bottom:4px;}
+  .tl-mini .axis{position:absolute;left:0;right:0;top:28px;height:2px;background:var(--line);border-radius:2px;}
+  .tl-mini .luteal{position:absolute;top:24px;height:10px;border-radius:5px;background:var(--lav-glow);opacity:.55;left:52%;right:0;}
+  .tl-mini .mk{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--coral);top:24px;border:2px solid var(--ink);box-shadow:0 0 8px -1px var(--coral);}
+
+  /* Calendar */
+  .phone.featured.calendar{height:780px;box-shadow:0 0 0 9px #16121b,0 0 0 11px rgba(157,143,199,.12),0 30px 70px -30px #000;}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600;margin-bottom:10px;}
+  .cal-nav span{color:var(--muted);font-size:12px;font-weight:400;}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;font-family:"JetBrains Mono",monospace;font-size:8px;color:var(--faint);text-align:center;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-day{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;position:relative;color:var(--muted);}
+  .cal-day.in{color:var(--text);}
+  .cal-day.luteal{background:var(--lav-dim);}
+  .cal-day.selected{background:var(--coral);color:#2a1714;font-weight:700;}
+  .cal-day .dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--coral);box-shadow:0 0 4px var(--coral);}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:10px;font-size:9px;color:var(--faint);}
+  .cal-legend i{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:4px;vertical-align:-1px;}
+  .cal-legend i.luteal{background:var(--lav-dim);border:1px solid var(--lav-glow);}
+  .cal-legend i.pain{background:var(--coral);}
+  .day-panel{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;}
+  .day-panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px;}
+  .day-panel-h .t{font-family:"Fraunces",serif;font-size:16px;font-weight:500;}
+  .day-panel-h .phase{font-size:10px;color:var(--lav);font-weight:600;white-space:nowrap;}
+
+  .footer{max-width:1180px;margin:64px auto 0;padding-top:28px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="kicker">Today · Recent entries</div>
+  <h1>Entries with color &amp; markers.</h1>
+  <p>…Plum &amp; Ember theme. <b style="color:var(--text);font-weight:500;">Today</b> = today only. <b style="color:var(--text);font-weight:500;">Calendar</b> = log history. <b style="color:var(--text);font-weight:500;">Patterns</b> = insights only.</p>
+</header>
+
+<section class="legend">
+  <div>
+    <h4>Information architecture</h4>
+    <ul>
+      <li><b style="color:var(--text);font-weight:500;">Today</b> — graph + today's logs only</li>
+      <li><b style="color:var(--text);font-weight:500;">Calendar</b> — browse &amp; edit any day's logs</li>
+      <li><b style="color:var(--text);font-weight:500;">Patterns</b> — cycle stats, no log list</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Design goals</h4>
+    <ul>
+      <li>Scan severity &amp; type at a glance</li>
+      <li>Color encodes pain vs cycle context</li>
+      <li>Markers for triggers, location, relief</li>
+      <li>Keep tap-to-edit interaction</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Sample data</h4>
+    <ul>
+      <li>Today — Migraine severe, spotting (luteal)</li>
+      <li>Yesterday — Migraine moderate, stress trigger</li>
+      <li>Jul 21 — Light bleeding, mild cramps</li>
+    </ul>
+  </div>
+</section>
+
+<!-- D: Featured direction -->
+<section class="featured-wrap">
+  <div class="featured-copy">
+    <div class="scr-name hot">D · Day heat strip · chosen</div>
+    <h2>Today for today. Calendar for history.</h2>
+    <p>The Today tab stays focused — intensity graph and today's logs only. Cross-day history lives on Calendar — pick a day, see its logs with the same heat-row style.</p>
+    <ul>
+      <li>Today: graph + time-only rows</li>
+      <li>Calendar: month grid + day detail</li>
+      <li>Patterns: insights only (see patterns mock)</li>
+      <li>Talk — floating mic button (bottom center)</li>
+      <li>Tap — + in the top bar (manual log)</li>
+      <li>Tap any row to edit</li>
+    </ul>
+  </div>
+  <div class="featured-phones">
+  <div class="frame-wrap">
+    <div class="scr-name">Today tab</div>
+    <div class="phone featured">
+      <div class="island"></div>
+      <div class="statusbar"><span>9:41</span><span class="dots">●●●</span></div>
+      <div class="screen">
+        <div class="screen-scroll">
+          <div class="today-top">
+            <div>
+              <div class="today-h">Today</div>
+              <div class="today-date">Friday, July 24</div>
+            </div>
+            <div class="nav-plus" title="Tap to log">+</div>
+          </div>
+          <div class="day-strip">
+            <div class="label">Today's intensity</div>
+            <div class="heat-row">
+              <div class="heat-block pain h3"><span class="tip">7a</span></div>
+              <div class="heat-block"></div>
+              <div class="heat-block cycle"></div>
+              <div class="heat-block"></div>
+              <div class="heat-block"></div>
+              <div class="heat-block"></div>
+              <div class="heat-block"></div>
+              <div class="heat-block pain h4"><span class="tip">9p</span></div>
+            </div>
+            <div class="heat-labels"><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>
+          </div>
+
+          <div class="log-group">
+            <div class="heat-entry">
+              <div class="when time-only">
+                <span class="time">9:08p</span>
+              </div>
+              <div class="content"><div class="t">Migraine — severe</div><div class="d">Right side · nausea · ibuprofen</div></div>
+              <div class="badge pain"></div>
+            </div>
+            <div class="heat-entry">
+              <div class="when time-only">
+                <span class="time">2:15p</span>
+              </div>
+              <div class="content"><div class="t">Spotting</div><div class="d">Mild cramps · luteal phase</div></div>
+              <div class="badge cycle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="fab-talk" title="Talk">🎤</div>
+        <div class="tabbar">
+          <div class="tab on"><span class="ic">☀</span>Today</div>
+          <div class="tab"><span class="ic">▦</span>Calendar</div>
+          <div class="tab"><span class="ic">◠</span>Patterns</div>
+          <div class="tab"><span class="ic">⚙</span>Settings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame-wrap">
+    <div class="scr-name">Calendar tab</div>
+    <div class="phone featured calendar">
+      <div class="island"></div>
+      <div class="statusbar"><span>9:41</span><span class="dots">●●●</span></div>
+      <div class="screen">
+        <div class="screen-scroll">
+          <div class="nav-title" style="padding:0 0 12px;text-align:center;font-size:17px;font-weight:600;">Calendar</div>
+          <div class="cal-nav">
+            <span>‹</span>
+            July 2026
+            <span>›</span>
+          </div>
+          <div class="cal-weekdays"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+          <div class="cal-grid">
+            <div class="cal-day"></div><div class="cal-day"></div>
+            <div class="cal-day in">1</div><div class="cal-day in luteal">2</div><div class="cal-day in luteal">3</div><div class="cal-day in luteal">4</div><div class="cal-day in luteal">5</div>
+            <div class="cal-day in luteal">6</div><div class="cal-day in luteal">7</div><div class="cal-day in luteal">8</div><div class="cal-day in luteal">9</div><div class="cal-day in luteal">10</div><div class="cal-day in luteal">11</div><div class="cal-day in luteal">12</div>
+            <div class="cal-day in luteal">13</div><div class="cal-day in luteal">14</div><div class="cal-day in luteal">15</div><div class="cal-day in luteal">16</div><div class="cal-day in luteal">17</div><div class="cal-day in luteal">18</div><div class="cal-day in luteal">19</div>
+            <div class="cal-day in luteal">20</div><div class="cal-day in luteal">21</div><div class="cal-day in luteal">22</div><div class="cal-day in luteal">23</div><div class="cal-day in selected luteal">24<span class="dot"></span></div><div class="cal-day in">25</div><div class="cal-day in">26</div>
+            <div class="cal-day in">27</div><div class="cal-day in">28</div><div class="cal-day in">29</div><div class="cal-day in">30</div><div class="cal-day in">31</div>
+          </div>
+          <div class="cal-legend">
+            <span><i class="luteal"></i>luteal</span>
+            <span><i class="pain"></i>migraine</span>
+          </div>
+
+          <div class="day-panel">
+            <div class="day-panel-h">
+              <span class="t">Friday 24 July</span>
+              <span class="phase">luteal · day 24</span>
+            </div>
+            <div class="heat-entry">
+              <div class="when time-only"><span class="time">9:08p</span></div>
+              <div class="content"><div class="t">Migraine — severe</div><div class="d">Right side · nausea · ibuprofen</div></div>
+              <div class="badge pain"></div>
+            </div>
+            <div class="heat-entry">
+              <div class="when time-only"><span class="time">2:15p</span></div>
+              <div class="content"><div class="t">Spotting</div><div class="d">Mild cramps</div></div>
+              <div class="badge cycle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">☀</span>Today</div>
+          <div class="tab on"><span class="ic">▦</span>Calendar</div>
+          <div class="tab"><span class="ic">◠</span>Patterns</div>
+          <div class="tab"><span class="ic">⚙</span>Settings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<div class="grid">
+
+  <!-- B: Timeline rail (alternative) -->
+  <div class="frame-wrap">
+    <div class="scr-name">B · Timeline rail · alternative</div>
+    <div class="annot">Kept for reference — vertical <b>timeline</b> with colored nodes, severity bar, and tag markers. Busier than D; not chosen.</div>
+    <div class="phone">
+      <div class="island"></div>
+      <div class="statusbar"><span>9:41</span><span class="dots">●●●</span></div>
+      <div class="screen">
+        <div class="screen-scroll">
+          <div class="today-top">
+            <div>
+              <div class="today-h">Today</div>
+              <div class="today-date">Friday, July 24</div>
+            </div>
+            <div class="nav-plus" title="Tap to log">+</div>
+          </div>
+          <div class="sec-h">Recent</div>
+          <div class="timeline-list">
+            <div class="tl-entry pain">
+              <div class="row">
+                <div class="title">Migraine</div>
+                <div class="time">9:08 PM</div>
+              </div>
+              <div class="desc">Severe — right side, throbbing. Took ibuprofen.</div>
+              <div class="sev-bar"><i class="s4"></i></div>
+              <div class="marker-row">
+                <span class="marker pain">severe</span>
+                <span class="marker pain">nausea</span>
+                <span class="marker neutral">ibuprofen</span>
+              </div>
+            </div>
+            <div class="tl-entry cycle">
+              <div class="row">
+                <div class="title">Spotting</div>
+                <div class="time">2:15 PM</div>
+              </div>
+              <div class="desc">Light bleeding, mild cramps. Day 24 · luteal.</div>
+              <div class="marker-row">
+                <span class="marker cycle">spotting</span>
+                <span class="marker cycle">mild cramps</span>
+                <span class="marker cycle">luteal</span>
+              </div>
+            </div>
+            <div class="tl-entry mixed">
+              <div class="row">
+                <div class="title">Migraine</div>
+                <div class="time">7:42 AM</div>
+              </div>
+              <div class="desc">Moderate — right side. Possible trigger: stress.</div>
+              <div class="sev-bar"><i class="s3"></i></div>
+              <div class="marker-row">
+                <span class="marker pain">moderate</span>
+                <span class="marker pain">right</span>
+                <span class="marker neutral">stress</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="fab-talk" title="Talk">🎤</div>
+        <div class="tabbar">
+          <div class="tab on"><span class="ic">☀</span>Today</div>
+          <div class="tab"><span class="ic">▦</span>Calendar</div>
+          <div class="tab"><span class="ic">◠</span>Patterns</div>
+          <div class="tab"><span class="ic">⚙</span>Settings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  Open this file in a browser: <code style="font-family:'JetBrains Mono',monospace;color:var(--muted);">docs/symptom-tracker-entries-mocks.html</code> · <b style="color:var(--text);font-weight:500;">Today</b> + <b style="color:var(--text);font-weight:500;">Calendar</b> for logs. Full Patterns screen → <code style="font-family:'JetBrains Mono',monospace;color:var(--muted);">symptom-tracker-patterns-mocks.html</code>.
+</footer>
+
+</body>
+</html>

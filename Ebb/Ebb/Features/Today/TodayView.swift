@@ -21,21 +21,38 @@ struct TodayView: View {
         cycleService.snapshot(for: .now, entries: entries)
     }
 
+    private var todaysEntries: [SymptomEntry] {
+        let calendar = Calendar.current
+        return entries
+            .filter { calendar.isDate($0.timestamp, inSameDayAs: .now) }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     cycleRing
-                    daySummarySection
-                    logButtons
-                    entriesSection
+                    TodayIntensityStrip(entries: todaysEntries)
                 }
                 .padding(20)
+
+                ScrollView {
+                    entriesSection
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 96)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .background(theme.base)
             .foregroundStyle(theme.text)
             .toolbar(.hidden, for: .navigationBar)
+            .overlay(alignment: .bottom) {
+                talkFAB
+                    .padding(.bottom, 22)
+            }
             .sheet(isPresented: $showTapLog) {
                 TapLogView(schema: schema)
             }
@@ -91,132 +108,91 @@ struct TodayView: View {
                 summary: cycleSnapshot.summary
             )
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Cycle")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.cycle)
                 Text(cycleSnapshot.summary)
-                    .font(.footnote)
+                    .font(.caption)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(22)
+            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 24))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 18))
             .overlay {
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 18)
                     .strokeBorder(theme.line, lineWidth: 1)
             }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Today")
-                .font(.system(.title, design: .serif))
-            Text(Date.now.formatted(date: .complete, time: .omitted))
-                .font(.footnote)
-                .foregroundStyle(theme.muted)
-        }
-    }
-
-    private var daySummarySection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionHeader(title: "Your day")
-            Text(DaySummaryBuilder.todaySummary(entries: entries, schema: schema))
-                .font(.subheadline)
-                .foregroundStyle(theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var logButtons: some View {
-        HStack(spacing: 11) {
-            Button { showTalkLog = true } label: {
-                logButton(
-                    title: "Talk",
-                    hint: "Say how you feel",
-                    style: .talk,
-                    systemImage: "mic.fill"
-                )
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Today")
+                    .font(.system(.title, design: .serif))
+                Text(Date.now.formatted(date: .complete, time: .omitted))
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
             }
-
+            Spacer(minLength: 12)
             Button { showTapLog = true } label: {
-                logButton(
-                    title: "Tap",
-                    hint: "Log with buttons",
-                    style: .tap,
-                    systemImage: "hand.tap.fill"
-                )
+                Image(systemName: "plus")
+                    .font(.title2.weight(.light))
+                    .foregroundStyle(theme.text)
+                    .frame(width: 34, height: 34)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(theme.line, lineWidth: 1)
+                    }
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Log symptoms")
         }
     }
 
     @ViewBuilder
     private var entriesSection: some View {
-        if entries.isEmpty {
+        if todaysEntries.isEmpty {
             emptyState
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Recent")
-                ForEach(recentEntries) { entry in
+            VStack(spacing: 0) {
+                ForEach(todaysEntries) { entry in
                     Button { editingEntry = entry } label: {
-                        EntryCard(entry: entry, schema: schema)
+                        TodayEntryRow(entry: entry, schema: schema)
                     }
                     .buttonStyle(.plain)
+
+                    if entry.id != todaysEntries.last?.id {
+                        Divider().overlay(theme.line)
+                    }
                 }
             }
         }
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Your log")
-            Text("Your log starts here. Tap above to record how you're feeling — no account, everything stays on this device.")
-                .font(.subheadline)
-                .foregroundStyle(theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 16))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(theme.line, lineWidth: 1)
-        }
+        Text("Nothing logged yet today. Tap + or use the mic button below.")
+            .font(.subheadline)
+            .foregroundStyle(theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel("Nothing logged yet today. Tap plus or use the mic button below.")
     }
 
-    private var recentEntries: [SymptomEntry] {
-        Array(entries.prefix(10))
-    }
-
-    private enum LogButtonStyle { case talk, tap }
-
-    private func logButton(
-        title: String,
-        hint: String,
-        style: LogButtonStyle,
-        systemImage: String
-    ) -> some View {
-        VStack(spacing: 3) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
-            Text(hint)
-                .font(.caption2)
-                .opacity(0.75)
+    private var talkFAB: some View {
+        Button { showTalkLog = true } label: {
+            Image(systemName: "mic.fill")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(theme.onPain)
+                .frame(width: 64, height: 64)
+                .background(theme.pain, in: Circle())
+                .shadow(color: theme.pain.opacity(0.5), radius: 14, y: 4)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 15)
-        .foregroundStyle(style == .talk ? theme.onPain : theme.text)
-        .background {
-            if style == .talk {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(theme.pain)
-            } else {
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(theme.line, lineWidth: 1)
-            }
-        }
+        .accessibilityLabel("Talk")
+        .accessibilityHint("Say how you feel")
     }
 }
 
@@ -233,15 +209,30 @@ struct TodayView: View {
 #Preview("With entries") {
     let schema = try! SchemaConfig.load()
     let container = try! ModelContainer(for: SymptomEntry.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let entry = SymptomEntry(
+    let calendar = Calendar.current
+    let migraine = SymptomEntry(
+        timestamp: calendar.date(bySettingHour: 21, minute: 8, second: 0, of: .now)!,
         schemaVersion: schema.schemaVersion,
         fieldValues: [
             "migraine_present": .boolean(true),
-            "severity": .scale(3),
+            "severity": .scale(4),
             "location": .choices(["right"]),
+            "associated_symptoms": .choices(["nausea"]),
+            "relief_taken": .choices(["ibuprofen"]),
         ]
     )
-    container.mainContext.insert(entry)
+    let spotting = SymptomEntry(
+        timestamp: calendar.date(bySettingHour: 14, minute: 15, second: 0, of: .now)!,
+        schemaVersion: schema.schemaVersion,
+        fieldValues: [
+            "migraine_present": .boolean(false),
+            "bleeding": .choice("spotting"),
+            "cramps_severity": .scale(2),
+        ],
+        cyclePhase: .luteal
+    )
+    container.mainContext.insert(migraine)
+    container.mainContext.insert(spotting)
     return TodayView(schema: schema)
         .modelContainer(container)
         .environment(\.theme, .plumEmber)
