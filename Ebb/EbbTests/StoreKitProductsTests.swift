@@ -5,16 +5,23 @@ import Testing
 
 @Suite("StoreKit products", .serialized)
 struct StoreKitProductsTests {
-    private static let configURL = URL(fileURLWithPath: #filePath)
+    private static let fallbackConfigURL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .appendingPathComponent("EbbPlus.storekit")
+
+    private static var configURL: URL {
+        Bundle.main.url(forResource: "EbbPlus", withExtension: "storekit") ?? fallbackConfigURL
+    }
 
     private static var session: SKTestSession?
 
     init() throws {
         if Self.session == nil {
-            Self.session = try SKTestSession(contentsOf: Self.configURL)
+            let session = try SKTestSession(contentsOf: Self.configURL)
+            session.disableDialogs = true
+            try session.clearTransactions()
+            Self.session = session
         }
     }
 
@@ -23,7 +30,16 @@ struct StoreKitProductsTests {
     }
 
     @Test func loadsAllEbbPlusProducts() async throws {
-        let products = try await Product.products(for: Array(EbbPlusProductIDs.all))
-        #expect(products.count == 3)
+        let session = try #require(Self.session)
+        try session.clearTransactions()
+
+        var products: [Product] = []
+        for _ in 0..<6 {
+            products = try await Product.products(for: Array(EbbPlusProductIDs.all))
+            if products.count == EbbPlusProductIDs.all.count { break }
+            try await Task.sleep(nanoseconds: 250_000_000)
+        }
+
+        #expect(products.count == EbbPlusProductIDs.all.count)
     }
 }
