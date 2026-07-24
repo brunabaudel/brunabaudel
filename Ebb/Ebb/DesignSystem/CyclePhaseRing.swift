@@ -12,22 +12,24 @@ struct CyclePhaseRing: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 12) {
             ring
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(phase.displayName)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.cycle)
                 Text(summary)
-                    .font(.footnote)
+                    .font(.caption)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(22)
-        .background(theme.surface, in: .rect(cornerRadius: 24))
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.surface, in: .rect(cornerRadius: 18))
         .overlay {
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 18)
                 .strokeBorder(theme.line, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
@@ -37,23 +39,23 @@ struct CyclePhaseRing: View {
     private var ring: some View {
         ZStack {
             Circle()
-                .stroke(theme.line, lineWidth: 6)
+                .stroke(theme.line, lineWidth: 5)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(theme.cycle, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(theme.cycle, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: progress)
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 Text("\(cycleDay)")
-                    .font(.system(.title, design: .serif))
+                    .font(.system(.title2, design: .serif))
                     .foregroundStyle(theme.text)
                 Text("DAY")
                     .font(.caption2.weight(.semibold))
-                    .kerning(1.6)
+                    .kerning(1.4)
                     .foregroundStyle(theme.muted)
             }
         }
-        .frame(width: 104, height: 104)
+        .frame(width: 76, height: 76)
         .accessibilityHidden(true)
     }
 

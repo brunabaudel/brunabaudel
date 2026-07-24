@@ -9,73 +9,56 @@ struct TodayView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showTapLog = false
-    @State private var showTalkLog = false
-    @State private var showConfirm = false
-    @State private var confirmViewModel: ConfirmViewModel?
     @State private var editingEntry: SymptomEntry?
-
-    @Environment(\.symptomClassifier) private var symptomClassifier
-    @Environment(MedicationPreferences.self) private var medicationPreferences
 
     private var cycleSnapshot: CycleSnapshot {
         cycleService.snapshot(for: .now, entries: entries)
     }
 
+    private var todaysEntries: [SymptomEntry] {
+        let calendar = Calendar.current
+        return entries
+            .filter { calendar.isDate($0.timestamp, inSameDayAs: .now) }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     cycleRing
-                    daySummarySection
-                    logButtons
-                    entriesSection
+                    TodayIntensityStrip(entries: todaysEntries)
                 }
                 .padding(20)
+
+                ScrollView {
+                    entriesSection
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 24)
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .background(theme.base)
             .foregroundStyle(theme.text)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showTapLog) {
-                TapLogView(schema: schema)
-            }
-            .sheet(isPresented: $showTalkLog) {
-                TalkView(schema: schema) { transcript in
-                    confirmViewModel = ConfirmViewModel(
-                        transcript: transcript,
-                        schema: schema,
-                        classifier: symptomClassifier,
-                        medicationPreferences: medicationPreferences
-                    )
-                    showConfirm = true
-                }
-            }
-            .sheet(isPresented: $showConfirm, onDismiss: {
-                confirmViewModel = nil
-            }) {
-                if let confirmViewModel {
-                    ConfirmView(schema: schema, viewModel: confirmViewModel)
-                }
+                TapLogView(
+                    schema: schema,
+                    openTalkOnAppear: ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog,
+                    openConfirmOnAppear: ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog,
+                    launchTranscript: ProcessInfo.processInfo.mockTranscriptText
+                )
             }
             .sheet(item: $editingEntry) { entry in
                 TapLogView(schema: schema, entry: entry)
             }
             .onAppear {
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
+                if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog
+                    || ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog
+                    || ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog {
                     showTapLog = true
-                }
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog {
-                    showTalkLog = true
-                }
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog,
-                   let transcript = ProcessInfo.processInfo.mockTranscriptText {
-                    confirmViewModel = ConfirmViewModel(
-                        transcript: transcript,
-                        schema: schema,
-                        classifier: symptomClassifier,
-                        medicationPreferences: medicationPreferences
-                    )
-                    showConfirm = true
                 }
             }
         }
@@ -91,132 +74,78 @@ struct TodayView: View {
                 summary: cycleSnapshot.summary
             )
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Cycle")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.cycle)
                 Text(cycleSnapshot.summary)
-                    .font(.footnote)
+                    .font(.caption)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(22)
+            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: 24))
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 18))
             .overlay {
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 18)
                     .strokeBorder(theme.line, lineWidth: 1)
             }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Today")
-                .font(.system(.title, design: .serif))
-            Text(Date.now.formatted(date: .complete, time: .omitted))
-                .font(.footnote)
-                .foregroundStyle(theme.muted)
-        }
-    }
-
-    private var daySummarySection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionHeader(title: "Your day")
-            Text(DaySummaryBuilder.todaySummary(entries: entries, schema: schema))
-                .font(.subheadline)
-                .foregroundStyle(theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private var logButtons: some View {
-        HStack(spacing: 11) {
-            Button { showTalkLog = true } label: {
-                logButton(
-                    title: "Talk",
-                    hint: "Say how you feel",
-                    style: .talk,
-                    systemImage: "mic.fill"
-                )
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Today")
+                    .font(.system(.title, design: .serif))
+                Text(Date.now.formatted(date: .complete, time: .omitted))
+                    .font(.footnote)
+                    .foregroundStyle(theme.muted)
             }
-
+            Spacer(minLength: 12)
             Button { showTapLog = true } label: {
-                logButton(
-                    title: "Tap",
-                    hint: "Log with buttons",
-                    style: .tap,
-                    systemImage: "hand.tap.fill"
-                )
+                Image(systemName: "plus")
+                    .font(.title2.weight(.light))
+                    .foregroundStyle(theme.text)
+                    .frame(width: 34, height: 34)
+                    .background(theme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(theme.line, lineWidth: 1)
+                    }
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Log symptoms")
         }
     }
 
     @ViewBuilder
     private var entriesSection: some View {
-        if entries.isEmpty {
+        if todaysEntries.isEmpty {
             emptyState
         } else {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Recent")
-                ForEach(recentEntries) { entry in
+            VStack(spacing: 0) {
+                ForEach(todaysEntries) { entry in
                     Button { editingEntry = entry } label: {
-                        EntryCard(entry: entry, schema: schema)
+                        TodayEntryRow(entry: entry, schema: schema)
                     }
                     .buttonStyle(.plain)
+
+                    if entry.id != todaysEntries.last?.id {
+                        Divider().overlay(theme.line)
+                    }
                 }
             }
         }
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Your log")
-            Text("Your log starts here. Tap above to record how you're feeling — no account, everything stays on this device.")
-                .font(.subheadline)
-                .foregroundStyle(theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 16))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(theme.line, lineWidth: 1)
-        }
-    }
-
-    private var recentEntries: [SymptomEntry] {
-        Array(entries.prefix(10))
-    }
-
-    private enum LogButtonStyle { case talk, tap }
-
-    private func logButton(
-        title: String,
-        hint: String,
-        style: LogButtonStyle,
-        systemImage: String
-    ) -> some View {
-        VStack(spacing: 3) {
-            Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
-            Text(hint)
-                .font(.caption2)
-                .opacity(0.75)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 15)
-        .foregroundStyle(style == .talk ? theme.onPain : theme.text)
-        .background {
-            if style == .talk {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(theme.pain)
-            } else {
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(theme.line, lineWidth: 1)
-            }
-        }
+        Text("Nothing logged yet today. Tap + to log how you're feeling.")
+            .font(.subheadline)
+            .foregroundStyle(theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel("Nothing logged yet today. Tap plus to log how you're feeling.")
     }
 }
 
@@ -233,15 +162,30 @@ struct TodayView: View {
 #Preview("With entries") {
     let schema = try! SchemaConfig.load()
     let container = try! ModelContainer(for: SymptomEntry.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let entry = SymptomEntry(
+    let calendar = Calendar.current
+    let migraine = SymptomEntry(
+        timestamp: calendar.date(bySettingHour: 21, minute: 8, second: 0, of: .now)!,
         schemaVersion: schema.schemaVersion,
         fieldValues: [
             "migraine_present": .boolean(true),
-            "severity": .scale(3),
+            "severity": .scale(4),
             "location": .choices(["right"]),
+            "associated_symptoms": .choices(["nausea"]),
+            "relief_taken": .choices(["ibuprofen"]),
         ]
     )
-    container.mainContext.insert(entry)
+    let spotting = SymptomEntry(
+        timestamp: calendar.date(bySettingHour: 14, minute: 15, second: 0, of: .now)!,
+        schemaVersion: schema.schemaVersion,
+        fieldValues: [
+            "migraine_present": .boolean(false),
+            "bleeding": .choice("spotting"),
+            "cramps_severity": .scale(2),
+        ],
+        cyclePhase: .luteal
+    )
+    container.mainContext.insert(migraine)
+    container.mainContext.insert(spotting)
     return TodayView(schema: schema)
         .modelContainer(container)
         .environment(\.theme, .plumEmber)

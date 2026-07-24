@@ -10,7 +10,9 @@
 <style>
   :root{
     --page:#0E0B12;--ink:#1A1620;--surface:#241E2C;--raised:#2C2533;--line:#3A3242;
-    --text:#EDE6F0;--muted:#A99FB0;--faint:#776E80;--coral:#E89B8B;--coral-dim:#7d4f48;--lav:#9D8FC7;--lav-dim:#4c4466;--sage:#8FB1A0;
+    --text:#EDE6F0;--muted:#A99FB0;--faint:#776E80;
+    --coral:#E89B8B;--coral-dim:#2E2229;--coral-glow:#7d4f48;
+    --lav:#9D8FC7;--lav-dim:#241F33;--lav-glow:#4c4466;--sage:#8FB1A0;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-font-smoothing:antialiased}
@@ -130,15 +132,134 @@
   .scroll-hint{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:center;margin-top:8px;padding-bottom:4px;}
   .section-tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);background:#2a2028;border:1px solid var(--coral-dim);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle;}
 
+  /* featured full screen */
+  .featured-wrap{max-width:1180px;margin:0 auto 56px;display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;justify-content:center;}
+  .featured-copy{max-width:100%;flex:1 1 300px;padding-top:12px;}
+  .featured-copy h2{font-family:"Fraunces",serif;font-size:22px;font-weight:500;margin-bottom:10px;}
+  .featured-copy p{font-size:14px;color:var(--muted);line-height:1.55;margin-bottom:14px;}
+  .featured-copy ul{list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--faint);}
+  .featured-copy li::before{content:"→";color:var(--coral);margin-right:8px;}
+  .phone.hero{height:900px;box-shadow:0 0 0 9px #16121b,0 0 0 11px rgba(157,143,199,.15),0 30px 70px -30px #000;}
+
+  .states-divider{max-width:1180px;margin:0 auto 40px;padding-top:36px;border-top:1px solid var(--line);}
+  .states-divider h2{font-family:"Fraunces",serif;font-size:24px;font-weight:500;margin-bottom:8px;}
+  .states-divider p{color:var(--muted);font-size:15px;}
+
   .footer{max-width:1180px;margin:64px auto 0;padding-top:28px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;}
 </style>
 </head>
 <body>
 
 <header class="head">
-  <div class="kicker">Patterns · Full screen reference</div>
-  <h1>Every state of the <em>Patterns</em> tab.</h1>
-  <p>Mocks match the shipped SwiftUI screen: timeline + triggers + insight + relief (Ebb+ unlocked), the contextual paywall (free user with data), the “waiting for migraines” state, and the no-cycle empty state. Plum &amp; Ember theme. <b style="color:var(--text);font-weight:500;">Timeline labels</b> use proportional columns (5 / 9 / 14 days) — see the close-up below.</p>
+  <div class="kicker">Patterns · cycle insights</div>
+  <h1>The full <em>Patterns</em> screen.</h1>
+  <p>Patterns is for synthesis only — timeline, triggers, insight, relief. No log history here; that lives on <b style="color:var(--text);font-weight:500;">Calendar</b> (browse any day) and <b style="color:var(--text);font-weight:500;">Today</b> (today only). Plum &amp; Ember theme.</p>
+</header>
+
+<section class="legend">
+  <div>
+    <h4>Information architecture</h4>
+    <ul>
+      <li><b style="color:var(--text);font-weight:500;">Today</b> — today's graph + today's logs</li>
+      <li><b style="color:var(--text);font-weight:500;">Calendar</b> — browse history by day</li>
+      <li><b style="color:var(--text);font-weight:500;">Patterns</b> — cycle stats &amp; insights only</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Patterns sections (Ebb+)</h4>
+    <ul>
+      <li>Cycle timeline — luteal band + migraine dots</li>
+      <li>Most-logged triggers — horizontal bars</li>
+      <li>Insight card — plain-language synthesis</li>
+      <li>Relief effectiveness — meds × helped %</li>
+    </ul>
+  </div>
+  <div>
+    <h4>State logic</h4>
+    <ul>
+      <li>No cycle data → empty</li>
+      <li>Cycle, no migraines → waiting</li>
+      <li>Cycle + migraines, free → paywall</li>
+      <li>Cycle + migraines, Ebb+ → full screen below</li>
+    </ul>
+  </div>
+</section>
+
+<section class="featured-wrap">
+  <div class="featured-copy">
+    <div class="scr-name hot">Populated · Ebb+ unlocked</div>
+    <h2>Everything Patterns shows.</h2>
+    <p>The complete scroll when the stats engine has enough data and the user is on Ebb+. Four sections, no log list — ends at relief effectiveness.</p>
+    <ul>
+      <li>Timeline caption highlights luteal clustering</li>
+      <li>Trigger bars from logged fields</li>
+      <li>Insight ties trigger to phase window</li>
+      <li>Relief stats from relief_taken / relief_effect</li>
+    </ul>
+  </div>
+  <div class="frame-wrap">
+    <div class="phone hero">
+      <div class="island"></div>
+      <div class="statusbar"><span>21:20</span><span class="dots">●●●</span></div>
+      <div class="screen">
+        <div class="nav-title">Patterns</div>
+        <div class="screen-scroll tall">
+          <div class="pat-h">This cycle</div>
+
+          <div class="timeline-card">
+            <div class="cap">Your migraines <b>cluster in the luteal phase</b> — the days estrogen drops before your period. All 3 this cycle, all luteal.</div>
+            <div class="tl">
+              <span class="day0">day 1</span>
+              <div class="axis"></div>
+              <div class="luteal" style="left:52%;right:0;"></div>
+              <div class="mk" style="left:58%"></div>
+              <div class="mk" style="left:68%"></div>
+              <div class="mk" style="left:86%"></div>
+            </div>
+            <div class="tl-labels proportional">
+              <span style="width:17.86%">menstrual</span>
+              <span style="width:32.14%">follicular</span>
+              <span class="accent" style="width:50%">luteal</span>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="lbl">Most-logged triggers</div>
+            <div class="bar"><span class="nm">Poor sleep</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="n">3</span></div>
+            <div class="bar"><span class="nm">Stress</span><span class="track"><span class="fill" style="width:67%"></span></span><span class="n">2</span></div>
+            <div class="bar"><span class="nm">Skipped meal</span><span class="track"><span class="fill" style="width:33%"></span></span><span class="n">1</span></div>
+          </div>
+
+          <div class="insight-card">All 3 attacks followed <b>poor sleep</b> in the luteal window.</div>
+
+          <div class="sec" style="margin-top:22px;">
+            <div class="lbl">Relief effectiveness</div>
+            <div class="relief-row"><span>Ibuprofen</span><span class="stat">1/2 helped (50%)</span></div>
+            <div class="relief-row"><span>Sumatriptan</span><span class="stat">2/2 helped (100%)</span></div>
+            <div class="relief-row"><span>Rest</span><span class="stat">1× logged</span></div>
+          </div>
+
+          <div class="scroll-hint">↕ end of Patterns screen</div>
+        </div>
+        <div class="tabbar">
+          <div class="tab"><span class="ic">☀</span>Today</div>
+          <div class="tab"><span class="ic">▦</span>Calendar</div>
+          <div class="tab on"><span class="ic">◠</span>Patterns</div>
+          <div class="tab"><span class="ic">⚙</span>Settings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="states-divider">
+  <h2>Other states</h2>
+  <p>Paywall, waiting, and empty — unchanged. Timeline label fix reference below.</p>
+</section>
+
+<header class="head" style="margin-top:0;margin-bottom:32px;">
+  <div class="kicker">Reference · timeline fix</div>
+  <h1 style="font-size:clamp(24px,4vw,36px);">Timeline label <em>before / after</em>.</h1>
 </header>
 
 <section class="compare-row">
@@ -187,87 +308,9 @@
   </div>
 </section>
 
-<div class="legend">
-  <div>
-    <h4>Sections (populated)</h4>
-    <ul>
-      <li>Cycle timeline card — caption + luteal band + migraine dots</li>
-      <li>Most-logged triggers — horizontal bars, top 4</li>
-      <li>Insight card — template-driven synthesis</li>
-      <li>Relief effectiveness — meds × helped %</li>
-    </ul>
-  </div>
-  <div>
-    <h4>State logic</h4>
-    <ul>
-      <li>No HealthKit / period → empty</li>
-      <li>Cycle, no migraines → waiting</li>
-      <li>Cycle + migraines, free → paywall</li>
-      <li>Cycle + migraines, Ebb+ → full content</li>
-    </ul>
-  </div>
-</div>
-
 <div class="grid wide">
 
-  <!-- 1 · FULL POPULATED (scroll) -->
-  <div class="frame-wrap">
-    <div class="scr-name hot">01 · Populated · Ebb+ unlocked · full scroll</div>
-    <div class="phone tall">
-      <div class="island"></div>
-      <div class="statusbar"><span>21:20</span><span class="dots">􀙇 􀛨 􀋨</span></div>
-      <div class="screen">
-        <div class="nav-title">Patterns</div>
-        <div class="screen-scroll tall">
-          <div class="pat-h">This cycle</div>
-
-          <div class="timeline-card">
-            <div class="cap">Your migraines <b>cluster in the luteal phase</b> — the days estrogen drops before your period. All 3 this cycle, all luteal.</div>
-            <div class="tl">
-              <span class="day0">day 1</span>
-              <div class="axis"></div>
-              <div class="luteal" style="left:52%;right:0;"></div>
-              <div class="mk" style="left:58%"></div>
-              <div class="mk" style="left:68%"></div>
-              <div class="mk" style="left:86%"></div>
-            </div>
-            <div class="tl-labels proportional">
-              <span style="width:17.86%">menstrual</span>
-              <span style="width:32.14%">follicular</span>
-              <span class="accent" style="width:50%">luteal</span>
-            </div>
-          </div>
-
-          <div class="sec">
-            <div class="lbl">Most-logged triggers</div>
-            <div class="bar"><span class="nm">Poor sleep</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="n">3</span></div>
-            <div class="bar"><span class="nm">Stress</span><span class="track"><span class="fill" style="width:67%"></span></span><span class="n">2</span></div>
-            <div class="bar"><span class="nm">Skipped meal</span><span class="track"><span class="fill" style="width:33%"></span></span><span class="n">1</span></div>
-          </div>
-
-          <div class="insight-card">All 3 attacks followed <b>poor sleep</b> in the luteal window.</div>
-
-          <div class="sec" style="margin-top:22px;">
-            <div class="lbl">Relief effectiveness</div>
-            <div class="relief-row"><span>Ibuprofen</span><span class="stat">1/2 helped (50%)</span></div>
-            <div class="relief-row"><span>Sumatriptan</span><span class="stat">2/2 helped (100%)</span></div>
-            <div class="relief-row"><span>Rest</span><span class="stat">1× logged</span></div>
-          </div>
-
-          <div class="scroll-hint">↕ scrolls on device</div>
-        </div>
-        <div class="tabbar">
-          <div class="tab"><span class="ic">􀆮</span>Today</div>
-          <div class="tab"><span class="ic">􀉉</span>Calendar</div>
-          <div class="tab on"><span class="ic">􀐿</span>Patterns</div>
-          <div class="tab"><span class="ic">􀍟</span>Settings</div>
-        </div>
-      </div>
-    </div>
-    <div class="annot"><b>The full synthesis screen.</b> Everything the stats engine can surface: phase clustering on the timeline, trigger bars, a plain-language insight, and relief stats. This is what Ebb+ unlocks.</div>
-  </div>
-
-  <!-- 2 · PAYWALL -->
+  <!-- PAYWALL -->
   <div class="frame-wrap">
     <div class="scr-name">02 · Paywall · free user, data ready</div>
     <div class="phone std">
@@ -377,7 +420,7 @@
 </div>
 
 <div class="footer">
-  Matches <code>PatternsView.swift</code> + <code>PatternsPaywallView.swift</code> as of Phase 11. Open this file in a browser alongside the app for redesign work.
+  Open in browser: <code style="font-family:'JetBrains Mono',monospace;color:var(--muted);">docs/symptom-tracker-patterns-mocks.html</code> · Log history on <b style="color:var(--text);font-weight:500;">Calendar</b> only. See <code style="font-family:'JetBrains Mono',monospace;color:var(--muted);">symptom-tracker-entries-mocks.html</code> for Today + Calendar.
 </div>
 
 </body>

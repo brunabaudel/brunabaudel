@@ -1,13 +1,10 @@
 import Foundation
 import SwiftData
 
-/// Marks symptom entries dirty so SwiftData schedules a CloudKit export.
+/// Marks one symptom entry dirty so SwiftData can schedule a CloudKit export.
 ///
-/// Saving an unchanged store often does not enqueue upload work. Bumping
-/// `iCloudExportToken` gives CloudKit a real change to push on each nudge.
-///
-/// Callers must invoke `CloudKitSyncKicker.kick()` separately — this type must
-/// not post save/export notifications or it will recurse through `MainTabView`.
+/// Only invoked on explicit user retry — automatic saves already enqueue export.
+/// Bumping every entry repeatedly caused BGSystemTaskScheduler export conflicts.
 enum CloudKitExportNudger {
     @MainActor
     private static var isNudging = false
@@ -16,18 +13,21 @@ enum CloudKitExportNudger {
     static func nudge(modelContext: ModelContext) {
         guard AppRuntime.shouldUseCloudKitSync else { return }
         guard !isNudging else { return }
+
         isNudging = true
         defer { isNudging = false }
 
-        let descriptor = FetchDescriptor<SymptomEntry>()
-        guard let entries = try? modelContext.fetch(descriptor), !entries.isEmpty else {
+        var descriptor = FetchDescriptor<SymptomEntry>(
+            sortBy: [SortDescriptor(\SymptomEntry.timestamp, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+
+        guard let entry = try? modelContext.fetch(descriptor).first else {
             try? modelContext.save()
             return
         }
 
-        for entry in entries {
-            entry.iCloudExportToken += 1
-        }
+        entry.iCloudExportToken += 1
         try? modelContext.save()
     }
 }

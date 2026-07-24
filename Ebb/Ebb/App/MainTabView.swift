@@ -68,7 +68,10 @@ struct MainTabView: View {
             cloudSyncStatus.noteEntryCount(entryCount)
             cloudSyncStatus.monitorRestore(entryCount: entryCount)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .ebbRequestCloudKitExport)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .ebbRequestCloudKitExport)) { notification in
+            guard notification.userInfo?[CloudKitSyncKicker.forceUserInfoKey] as? Bool == true else {
+                return
+            }
             CloudKitExportNudger.nudge(modelContext: modelContext)
         }
         .fullScreenCover(isPresented: showOnboarding) {

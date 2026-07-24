@@ -106,4 +106,111 @@ enum DaySummaryBuilder {
             return "\(head), and \(items.last!.lowercased())"
         }
     }
+
+    // MARK: - Today row presentation
+
+    static func entryAccent(_ entry: SymptomEntry) -> FieldAccent {
+        let values = entry.fieldValues
+        if values["migraine_present"] == .boolean(true) {
+            return .pain
+        }
+        if let bleeding = values["bleeding"],
+           case .choice(let key) = bleeding,
+           key != "none" {
+            return .cycle
+        }
+        if case .scale(let step)? = values["cramps_severity"], step > 0 {
+            return .cycle
+        }
+        return .pain
+    }
+
+    static func todayRowTitle(_ entry: SymptomEntry, schema: SchemaConfig) -> String {
+        let values = entry.fieldValues
+        if values["migraine_present"] == .boolean(true) {
+            var title = "Migraine"
+            if case .scale(let step)? = values["severity"],
+               let label = schema.field(forKey: "severity")?.scaleLabels[step] {
+                title += " — \(label.lowercased())"
+            }
+            return title
+        }
+        if let bleeding = choiceLabel(for: "bleeding", in: values, schema: schema),
+           bleeding.lowercased() != "none" {
+            return bleeding
+        }
+        if case .scale(let step)? = values["cramps_severity"], step > 0,
+           let label = schema.field(forKey: "cramps_severity")?.scaleLabels[step] {
+            return "\(label.capitalized) cramps"
+        }
+        if values["migraine_present"] == .boolean(false) {
+            return "No migraine"
+        }
+        return "Symptom log"
+    }
+
+    static func todayRowDetail(_ entry: SymptomEntry, schema: SchemaConfig) -> String? {
+        let values = entry.fieldValues
+        var parts: [String] = []
+
+        for label in choiceLabelList(for: "location", in: values, schema: schema) {
+            parts.append(label)
+        }
+        for label in choiceLabelList(for: "associated_symptoms", in: values, schema: schema) {
+            parts.append(label.lowercased())
+        }
+        for label in choiceLabelList(for: "triggers", in: values, schema: schema) {
+            parts.append(label.lowercased())
+        }
+        for label in choiceLabelList(for: "relief_taken", in: values, schema: schema) {
+            parts.append(label.lowercased())
+        }
+
+        let title = todayRowTitle(entry, schema: schema)
+        if !title.localizedCaseInsensitiveContains("cramps"),
+           case .scale(let step)? = values["cramps_severity"], step > 0,
+           let label = schema.field(forKey: "cramps_severity")?.scaleLabels[step] {
+            parts.append("\(label.capitalized) cramps")
+        }
+
+        if let phase = entry.cyclePhase {
+            parts.append("\(phase.displayName.lowercased()) phase")
+        }
+
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: " · ")
+    }
+
+    static func painSeverity(for entry: SymptomEntry) -> Int? {
+        guard entry.fieldValues["migraine_present"] == .boolean(true),
+              case .scale(let step)? = entry.fieldValues["severity"] else {
+            return nil
+        }
+        return step
+    }
+
+    static func isCycleIntensityEntry(_ entry: SymptomEntry) -> Bool {
+        entryAccent(entry) == .cycle && painSeverity(for: entry) == nil
+    }
+
+    private static func choiceLabelList(
+        for key: String,
+        in values: [String: FieldValue],
+        schema: SchemaConfig
+    ) -> [String] {
+        guard let field = schema.field(forKey: key) else { return [] }
+        switch values[key] {
+        case .choices(let keys):
+            return keys.compactMap { choice in
+                field.values.first { $0.key == choice }?.label
+            }
+        case .choice(let key):
+            if let label = field.values.first(where: { $0.key == key })?.label {
+                return [label]
+            }
+            return []
+        default:
+            return []
+        }
+    }
 }

@@ -246,7 +246,7 @@ final class CloudSyncStatusService {
         isExportInProgress = false
         verificationStep = 0
         beginBackupProgress(at: .savedLocally, progress: 0.2)
-        CloudKitSyncKicker.kick()
+        CloudKitSyncKicker.kick(force: true)
         scheduleBackupVerification(forceRestart: true)
         updateStatusLabel()
     }
@@ -261,10 +261,11 @@ final class CloudSyncStatusService {
         }
         if backupPhase == .idle {
             beginBackupProgress(at: .savedLocally, progress: 0.2)
+            scheduleBackupVerification()
+        } else if !isVerifyingBackup {
+            scheduleBackupVerification()
         }
-        CloudKitSyncKicker.kick()
         updateStatusLabel()
-        scheduleBackupVerification()
     }
 
     /// Call from a view that owns the entry query so restore UI reflects real data.
@@ -358,7 +359,6 @@ final class CloudSyncStatusService {
         if isPartialFailure {
             // Some records may have uploaded; keep verifying instead of hard-stalling.
             lastBackupError = friendly
-            CloudKitSyncKicker.kick()
             updateStatusLabel()
             return
         }
@@ -386,7 +386,6 @@ final class CloudSyncStatusService {
         clearStaleNoBackupStateIfNeeded()
         beginBackupProgress(at: .savedLocally, progress: 0.2)
         updateStatusLabel()
-        CloudKitSyncKicker.kick()
         scheduleBackupVerification(forceRestart: true)
     }
 
@@ -439,7 +438,6 @@ final class CloudSyncStatusService {
                 let confirmingProgress = 0.85 + (Double(index + 1) / Double(retryDelaysSeconds.count)) * 0.14
                 beginBackupProgress(at: .confirming, progress: max(backupProgress, confirmingProgress))
                 updateStatusLabel()
-                CloudKitSyncKicker.kick()
 
                 switch await verify() {
                 case .confirmed:
@@ -477,7 +475,6 @@ final class CloudSyncStatusService {
                     return
                 }
 
-                CloudKitSyncKicker.kick()
                 if await verify() == .confirmed {
                     confirmBackupFromCloudKit()
                     return

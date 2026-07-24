@@ -1,12 +1,35 @@
 import UIKit
 
-/// Nudges CloudKit sync when uploads appear stuck. There is no public API to force export;
-/// re-registering for silent push and saving the store are the best levers available.
+/// Requests a CloudKit export nudge. SwiftData schedules export automatically on save;
+/// only force a token bump when the user explicitly retries a stalled backup.
 enum CloudKitSyncKicker {
     @MainActor
-    static func kick() {
+    private static var didRegisterForRemoteNotifications = false
+
+    @MainActor
+    static func kick(force: Bool = false) {
         guard AppRuntime.shouldUseCloudKitSync else { return }
-        UIApplication.shared.registerForRemoteNotifications()
-        NotificationCenter.default.post(name: .ebbRequestCloudKitExport, object: nil)
+
+        if !didRegisterForRemoteNotifications {
+            didRegisterForRemoteNotifications = true
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+
+        guard force else { return }
+
+        NotificationCenter.default.post(
+            name: .ebbRequestCloudKitExport,
+            object: nil,
+            userInfo: [Self.forceUserInfoKey: true]
+        )
     }
+
+    static let forceUserInfoKey = "force"
+
+    #if DEBUG
+    @MainActor
+    static func resetForTesting() {
+        didRegisterForRemoteNotifications = false
+    }
+    #endif
 }
