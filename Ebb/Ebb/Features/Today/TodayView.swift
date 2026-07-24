@@ -9,13 +9,7 @@ struct TodayView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var showTapLog = false
-    @State private var showTalkLog = false
-    @State private var showConfirm = false
-    @State private var confirmViewModel: ConfirmViewModel?
     @State private var editingEntry: SymptomEntry?
-
-    @Environment(\.symptomClassifier) private var symptomClassifier
-    @Environment(MedicationPreferences.self) private var medicationPreferences
 
     private var cycleSnapshot: CycleSnapshot {
         cycleService.snapshot(for: .now, entries: entries)
@@ -41,7 +35,7 @@ struct TodayView: View {
                 ScrollView {
                     entriesSection
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 96)
+                        .padding(.bottom, 24)
                 }
                 .scrollIndicators(.hidden)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -49,50 +43,22 @@ struct TodayView: View {
             .background(theme.base)
             .foregroundStyle(theme.text)
             .toolbar(.hidden, for: .navigationBar)
-            .overlay(alignment: .bottom) {
-                talkFAB
-                    .padding(.bottom, 22)
-            }
             .sheet(isPresented: $showTapLog) {
-                TapLogView(schema: schema)
-            }
-            .sheet(isPresented: $showTalkLog) {
-                TalkView(schema: schema) { transcript in
-                    confirmViewModel = ConfirmViewModel(
-                        transcript: transcript,
-                        schema: schema,
-                        classifier: symptomClassifier,
-                        medicationPreferences: medicationPreferences
-                    )
-                    showConfirm = true
-                }
-            }
-            .sheet(isPresented: $showConfirm, onDismiss: {
-                confirmViewModel = nil
-            }) {
-                if let confirmViewModel {
-                    ConfirmView(schema: schema, viewModel: confirmViewModel)
-                }
+                TapLogView(
+                    schema: schema,
+                    openTalkOnAppear: ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog,
+                    openConfirmOnAppear: ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog,
+                    launchTranscript: ProcessInfo.processInfo.mockTranscriptText
+                )
             }
             .sheet(item: $editingEntry) { entry in
                 TapLogView(schema: schema, entry: entry)
             }
             .onAppear {
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog {
+                if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog
+                    || ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog
+                    || ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog {
                     showTapLog = true
-                }
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog {
-                    showTalkLog = true
-                }
-                if ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog,
-                   let transcript = ProcessInfo.processInfo.mockTranscriptText {
-                    confirmViewModel = ConfirmViewModel(
-                        transcript: transcript,
-                        schema: schema,
-                        classifier: symptomClassifier,
-                        medicationPreferences: medicationPreferences
-                    )
-                    showConfirm = true
                 }
             }
         }
@@ -174,25 +140,12 @@ struct TodayView: View {
     }
 
     private var emptyState: some View {
-        Text("Nothing logged yet today. Tap + or use the mic button below.")
+        Text("Nothing logged yet today. Tap + to log how you're feeling.")
             .font(.subheadline)
             .foregroundStyle(theme.muted)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityLabel("Nothing logged yet today. Tap plus or use the mic button below.")
-    }
-
-    private var talkFAB: some View {
-        Button { showTalkLog = true } label: {
-            Image(systemName: "mic.fill")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(theme.onPain)
-                .frame(width: 64, height: 64)
-                .background(theme.pain, in: Circle())
-                .shadow(color: theme.pain.opacity(0.5), radius: 14, y: 4)
-        }
-        .accessibilityLabel("Talk")
-        .accessibilityHint("Say how you feel")
+            .accessibilityLabel("Nothing logged yet today. Tap plus to log how you're feeling.")
     }
 }
 

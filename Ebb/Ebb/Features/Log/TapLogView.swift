@@ -8,16 +8,25 @@ struct TapLogView: View {
     var entry: SymptomEntry?
     /// Verbatim transcript from Talk (Phase 5) — shown at the top, never rewritten.
     var initialNote: String? = nil
+    var openTalkOnAppear: Bool = false
+    var openConfirmOnAppear: Bool = false
+    var launchTranscript: String? = nil
 
     @Environment(\.theme) private var theme
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(CycleService.self) private var cycleService
+    @Environment(\.symptomClassifier) private var symptomClassifier
+    @Environment(MedicationPreferences.self) private var medicationPreferences
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var entries: [SymptomEntry]
 
     @State private var values: [String: FieldValue] = [:]
     @State private var note: String = ""
     @State private var showDeleteConfirmation = false
+    @State private var showTalkLog = false
+    @State private var showConfirm = false
+    @State private var confirmViewModel: ConfirmViewModel?
+    @State private var didApplyLaunchPresentation = false
 
     private var isEditing: Bool { entry != nil }
 
@@ -25,6 +34,10 @@ struct TapLogView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    if !isEditing {
+                        talkButton
+                    }
+
                     Text(isEditing ? "Update what applies. Leave anything blank." : "Tap what applies. You can leave anything blank.")
                         .font(.footnote)
                         .foregroundStyle(theme.muted)
@@ -67,6 +80,18 @@ struct TapLogView: View {
             } message: {
                 Text("This cannot be undone.")
             }
+            .sheet(isPresented: $showTalkLog) {
+                TalkView(schema: schema) { transcript in
+                    presentConfirm(for: transcript)
+                }
+            }
+            .sheet(isPresented: $showConfirm, onDismiss: {
+                confirmViewModel = nil
+            }) {
+                if let confirmViewModel {
+                    ConfirmView(schema: schema, viewModel: confirmViewModel)
+                }
+            }
             .onAppear {
                 if let entry {
                     values = entry.fieldValues
@@ -74,8 +99,62 @@ struct TapLogView: View {
                 } else if let initialNote {
                     note = initialNote
                 }
+                applyLaunchPresentationIfNeeded()
             }
         }
+    }
+
+    private var talkButton: some View {
+        Button { showTalkLog = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "mic.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(theme.onPain)
+                    .frame(width: 44, height: 44)
+                    .background(theme.pain, in: Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Talk")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.text)
+                    Text("Say how you feel")
+                        .font(.caption)
+                        .foregroundStyle(theme.muted)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .background(theme.surface, in: RoundedRectangle(cornerRadius: 14))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(theme.line, lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Talk")
+        .accessibilityHint("Say how you feel")
+    }
+
+    private func applyLaunchPresentationIfNeeded() {
+        guard !isEditing, !didApplyLaunchPresentation else { return }
+        didApplyLaunchPresentation = true
+
+        if openConfirmOnAppear, let launchTranscript {
+            presentConfirm(for: launchTranscript)
+        } else if openTalkOnAppear {
+            showTalkLog = true
+        }
+    }
+
+    private func presentConfirm(for transcript: String) {
+        confirmViewModel = ConfirmViewModel(
+            transcript: transcript,
+            schema: schema,
+            classifier: symptomClassifier,
+            medicationPreferences: medicationPreferences
+        )
+        showConfirm = true
     }
 
     private var noteSection: some View {
@@ -153,6 +232,8 @@ struct TapLogView: View {
     .modelContainer(for: SymptomEntry.self, inMemory: true)
     .environment(\.theme, .plumEmber)
     .environment(CycleService(provider: MockCycleDataProvider()))
+    .environment(MedicationPreferences())
+    .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }
 
 #Preview("New entry") {
@@ -160,6 +241,8 @@ struct TapLogView: View {
         .modelContainer(for: SymptomEntry.self, inMemory: true)
         .environment(\.theme, .plumEmber)
         .environment(CycleService(provider: MockCycleDataProvider()))
+        .environment(MedicationPreferences())
+        .environment(\.symptomClassifier, SynonymSymptomClassifier())
 }
 
 #Preview("Edit entry") {
