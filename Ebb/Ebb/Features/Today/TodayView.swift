@@ -10,6 +10,7 @@ struct TodayView: View {
 
     @State private var showTapLog = false
     @State private var editingEntry: SymptomEntry?
+    @State private var selectedIntensityBlock: Int? = TodayIntensityStrip.blockIndex(containing: .now)
 
     private var cycleSnapshot: CycleSnapshot {
         cycleService.snapshot(for: .now, entries: entries)
@@ -22,13 +23,21 @@ struct TodayView: View {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
+    private var displayedEntries: [SymptomEntry] {
+        guard let selectedIntensityBlock else { return todaysEntries }
+        return TodayIntensityStrip.entries(todaysEntries, inBlock: selectedIntensityBlock)
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     cycleRing
-                    TodayIntensityStrip(entries: todaysEntries)
+                    TodayIntensityStrip(
+                        entries: todaysEntries,
+                        selectedBlockIndex: $selectedIntensityBlock
+                    )
                 }
                 .padding(20)
 
@@ -55,6 +64,7 @@ struct TodayView: View {
                 TapLogView(schema: schema, entry: entry)
             }
             .onAppear {
+                selectedIntensityBlock = TodayIntensityStrip.blockIndex(containing: .now)
                 if ProcessInfo.processInfo.hasLaunchArgumentAutoTapLog
                     || ProcessInfo.processInfo.hasLaunchArgumentAutoTalkLog
                     || ProcessInfo.processInfo.hasLaunchArgumentAutoConfirmLog {
@@ -121,21 +131,50 @@ struct TodayView: View {
 
     @ViewBuilder
     private var entriesSection: some View {
-        if todaysEntries.isEmpty {
-            emptyState
-        } else {
-            VStack(spacing: 0) {
-                ForEach(todaysEntries) { entry in
-                    Button { editingEntry = entry } label: {
-                        TodayEntryRow(entry: entry, schema: schema)
-                    }
-                    .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 12) {
+            if let selectedIntensityBlock {
+                filteredSlotHeader(for: selectedIntensityBlock)
+            }
 
-                    if entry.id != todaysEntries.last?.id {
-                        Divider().overlay(theme.line)
+            if todaysEntries.isEmpty {
+                emptyState
+            } else if displayedEntries.isEmpty {
+                filteredEmptyState
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(displayedEntries) { entry in
+                        Button { editingEntry = entry } label: {
+                            TodayEntryRow(entry: entry, schema: schema)
+                        }
+                        .buttonStyle(.plain)
+
+                        if entry.id != displayedEntries.last?.id {
+                            Divider().overlay(theme.line)
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private func filteredSlotHeader(for index: Int) -> some View {
+        let range = TodayIntensityStrip.blockTimeRangeLabel(index: index)
+        return HStack(spacing: 8) {
+            Text(range)
+                .font(.caption.monospaced().weight(.semibold))
+                .foregroundStyle(theme.text)
+            Spacer(minLength: 8)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedIntensityBlock = nil
+                }
+            } label: {
+                Text("Show all")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(theme.muted)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Show all logs")
         }
     }
 
@@ -146,6 +185,14 @@ struct TodayView: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel("Nothing logged yet today. Tap plus to log how you're feeling.")
+    }
+
+    private var filteredEmptyState: some View {
+        Text("No logs in this time window.")
+            .font(.subheadline)
+            .foregroundStyle(theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

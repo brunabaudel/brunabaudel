@@ -1,31 +1,33 @@
 import SwiftUI
 
-/// Day heat strip for the Today tab — one block per ~2¼ h from 6am through midnight.
+/// Day heat strip for the Today tab — one block per 3 h across the full calendar day.
 struct TodayIntensityStrip: View {
     let entries: [SymptomEntry]
+    @Binding var selectedBlockIndex: Int?
     var day: Date = .now
     var calendar: Calendar = .current
 
     @Environment(\.theme) private var theme
 
-    private let blockCount = 8
+    static let blockCount = 8
     private let stripHeight: CGFloat = 36
+    private let tipHeight: CGFloat = 12
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader(title: "Today's intensity")
 
             HStack(alignment: .bottom, spacing: 4) {
-                ForEach(0..<blockCount, id: \.self) { index in
-                    blockView(for: blocks[index])
+                ForEach(0..<Self.blockCount, id: \.self) { index in
+                    blockButton(index: index, block: blocks[index])
                 }
             }
-            .frame(height: stripHeight, alignment: .bottom)
+            .frame(height: tipHeight + stripHeight, alignment: .bottom)
 
             HStack {
-                ForEach(timeAxisLabels, id: \.self) { label in
+                ForEach(Array(timeAxisLabels.enumerated()), id: \.offset) { index, label in
                     Text(label)
-                    if label != timeAxisLabels.last {
+                    if index < timeAxisLabels.count - 1 {
                         Spacer(minLength: 0)
                     }
                 }
@@ -33,33 +35,60 @@ struct TodayIntensityStrip: View {
             .font(.caption2.monospaced())
             .foregroundStyle(theme.muted.opacity(0.65))
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilitySummary)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Today's intensity")
     }
 
-    @ViewBuilder
-    private func blockView(for block: IntensityBlock) -> some View {
-        ZStack(alignment: .bottom) {
-            if let tip = block.tipLabel {
-                Text(tip)
-                    .font(.system(size: 8, weight: .regular, design: .monospaced))
-                    .foregroundStyle(theme.muted.opacity(0.65))
-                    .fixedSize()
-                    .offset(y: -stripHeight - 2)
+    private func blockButton(index: Int, block: IntensityBlock) -> some View {
+        let isSelected = selectedBlockIndex == index
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedBlockIndex = isSelected ? nil : index
             }
+        } label: {
+            VStack(spacing: 2) {
+                Text(block.tipLabel ?? " ")
+                    .font(.system(size: 8, weight: .regular, design: .monospaced))
+                    .foregroundStyle(
+                        block.tipLabel == nil
+                            ? .clear
+                            : theme.muted.opacity(isSelected ? 0.95 : 0.65)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(height: tipHeight)
 
-            RoundedRectangle(cornerRadius: 6)
-                .fill(blockFill(for: block.kind))
-                .opacity(blockOpacity(for: block.kind))
-                .frame(maxWidth: .infinity)
-                .frame(height: blockHeight(for: block.kind))
-                .shadow(
-                    color: blockGlow(for: block.kind),
-                    radius: block.kind.isHighPain ? 5 : 0,
-                    y: 0
-                )
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(blockFill(for: block.kind))
+                    .opacity(blockOpacity(for: block.kind))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: blockHeight(for: block.kind), alignment: .bottom)
+                    .frame(maxHeight: stripHeight, alignment: .bottom)
+                    .shadow(
+                        color: blockGlow(for: block.kind),
+                        radius: block.kind.isHighPain ? 5 : 0,
+                        y: 0
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(
+                                isSelected ? theme.muted.opacity(0.55) : Color.clear,
+                                lineWidth: 1
+                            )
+                    }
+            }
+            .frame(maxWidth: .infinity, minHeight: tipHeight + stripHeight, alignment: .bottom)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, minHeight: 8, maxHeight: stripHeight, alignment: .bottom)
+        .buttonStyle(.plain)
+        .opacity(selectedBlockIndex == nil || isSelected ? 1 : 0.4)
+        .accessibilityLabel(blockAccessibilityLabel(index: index, block: block))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityHint(
+            isSelected
+                ? "Showing logs for this time. Double tap to show all logs again."
+                : "Double tap to show logs for this time."
+        )
     }
 
     private var blocks: [IntensityBlock] {
@@ -67,12 +96,12 @@ struct TodayIntensityStrip: View {
             entries: entries,
             day: day,
             calendar: calendar,
-            blockCount: blockCount
+            blockCount: Self.blockCount
         )
     }
 
     private var timeAxisLabels: [String] {
-        ["6a", "12p", "6p", "12a"]
+        ["12a", "6a", "12p", "6p", "12a"]
     }
 
     private func blockFill(for kind: IntensityBlock.Kind) -> Color {
@@ -114,12 +143,86 @@ struct TodayIntensityStrip: View {
         return theme.pain.opacity(0.45)
     }
 
-    private var accessibilitySummary: String {
-        let logged = blocks.filter { $0.kind != .empty }.count
-        if logged == 0 {
-            return "Today's intensity. No logs yet between 6 AM and midnight."
+    private func blockAccessibilityLabel(index: Int, block: IntensityBlock) -> String {
+        let range = Self.blockTimeRangeLabel(index: index, day: day, calendar: calendar)
+        switch block.kind {
+        case .empty:
+            return "\(range). No symptoms logged."
+        case .pain(let severity):
+            return "\(range). Pain severity \(severity)."
+        case .cycle:
+            return "\(range). Cycle symptoms logged."
         }
-        return "Today's intensity. \(logged) time blocks with symptoms logged."
+    }
+
+    // MARK: - Timeline helpers
+
+    /// Entries whose timestamps fall in the given intensity block.
+    static func entries(
+        _ entries: [SymptomEntry],
+        inBlock index: Int,
+        day: Date = .now,
+        calendar: Calendar = .current
+    ) -> [SymptomEntry] {
+        guard let range = blockDateRange(index: index, day: day, calendar: calendar) else {
+            return []
+        }
+        return entries.filter { range.contains($0.timestamp) }
+    }
+
+    static func dayBounds(
+        for day: Date,
+        calendar: Calendar = .current
+    ) -> (start: Date, end: Date)? {
+        let dayStart = calendar.startOfDay(for: day)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            return nil
+        }
+        return (dayStart, dayEnd)
+    }
+
+    /// Block index containing `date` within that calendar day, if any.
+    static func blockIndex(
+        containing date: Date,
+        day: Date = .now,
+        calendar: Calendar = .current
+    ) -> Int? {
+        guard let bounds = dayBounds(for: day, calendar: calendar),
+              date >= bounds.start, date < bounds.end else {
+            return nil
+        }
+        let span = bounds.end.timeIntervalSince(bounds.start)
+        let offset = date.timeIntervalSince(bounds.start)
+        return min(blockCount - 1, max(0, Int(offset / span * Double(blockCount))))
+    }
+
+    static func blockDateRange(
+        index: Int,
+        day: Date = .now,
+        calendar: Calendar = .current
+    ) -> Range<Date>? {
+        guard index >= 0, index < blockCount,
+              let bounds = dayBounds(for: day, calendar: calendar) else {
+            return nil
+        }
+        let span = bounds.end.timeIntervalSince(bounds.start)
+        let blockSpan = span / Double(blockCount)
+        let start = bounds.start.addingTimeInterval(Double(index) * blockSpan)
+        let end = bounds.start.addingTimeInterval(Double(index + 1) * blockSpan)
+        return start..<end
+    }
+
+    static func blockTimeRangeLabel(
+        index: Int,
+        day: Date = .now,
+        calendar: Calendar = .current
+    ) -> String {
+        guard let range = blockDateRange(index: index, day: day, calendar: calendar) else {
+            return ""
+        }
+        let start = compactAxisTime(range.lowerBound, calendar: calendar)
+        let end = compactAxisTime(range.upperBound, calendar: calendar)
+        return "\(start)–\(end)"
     }
 
     private static func makeBlocks(
@@ -128,17 +231,16 @@ struct TodayIntensityStrip: View {
         calendar: Calendar,
         blockCount: Int
     ) -> [IntensityBlock] {
-        guard let dayStart = calendar.date(bySettingHour: 6, minute: 0, second: 0, of: day),
-              let dayEnd = calendar.date(byAdding: .hour, value: 18, to: dayStart) else {
+        guard let bounds = dayBounds(for: day, calendar: calendar) else {
             return Array(repeating: IntensityBlock(), count: blockCount)
         }
 
         var blocks = Array(repeating: IntensityBlock(), count: blockCount)
-        let span = dayEnd.timeIntervalSince(dayStart)
+        let span = bounds.end.timeIntervalSince(bounds.start)
 
         for entry in entries {
-            guard entry.timestamp >= dayStart, entry.timestamp < dayEnd else { continue }
-            let offset = entry.timestamp.timeIntervalSince(dayStart)
+            guard entry.timestamp >= bounds.start, entry.timestamp < bounds.end else { continue }
+            let offset = entry.timestamp.timeIntervalSince(bounds.start)
             let index = min(blockCount - 1, max(0, Int(offset / span * Double(blockCount))))
 
             if let severity = DaySummaryBuilder.painSeverity(for: entry) {
@@ -166,6 +268,17 @@ struct TodayIntensityStrip: View {
             return "\(hour12)\(isPM ? "p" : "a")"
         }
         return date.formatted(date: .omitted, time: .shortened).lowercased()
+    }
+
+    private static func compactAxisTime(_ date: Date, calendar: Calendar) -> String {
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        let isPM = hour >= 12
+        let hour12 = hour % 12 == 0 ? 12 : hour % 12
+        if minute == 0 {
+            return "\(hour12)\(isPM ? "p" : "a")"
+        }
+        return "\(hour12):\(String(format: "%02d", minute))\(isPM ? "p" : "a")"
     }
 }
 
@@ -196,6 +309,14 @@ private struct IntensityBlock: Sendable {
             "location": .choices(["right"]),
         ]
     )
+    let overnight = SymptomEntry(
+        timestamp: Calendar.current.date(bySettingHour: 2, minute: 30, second: 0, of: .now)!,
+        schemaVersion: schema.schemaVersion,
+        fieldValues: [
+            "migraine_present": .boolean(true),
+            "severity": .scale(3),
+        ]
+    )
     let spotting = SymptomEntry(
         timestamp: Calendar.current.date(bySettingHour: 14, minute: 15, second: 0, of: .now)!,
         schemaVersion: schema.schemaVersion,
@@ -206,8 +327,11 @@ private struct IntensityBlock: Sendable {
         ],
         cyclePhase: .luteal
     )
-    return TodayIntensityStrip(entries: [migraine, spotting])
-        .padding()
-        .background(Theme.plumEmber.base)
-        .environment(\.theme, .plumEmber)
+    return TodayIntensityStrip(
+        entries: [migraine, overnight, spotting],
+        selectedBlockIndex: .constant(0)
+    )
+    .padding()
+    .background(Theme.plumEmber.base)
+    .environment(\.theme, .plumEmber)
 }
