@@ -41,7 +41,7 @@
          </TestableReference>
       </Testables>
       <StoreKitConfigurationFileReference
-         identifier = "../EbbPlus.storekit">
+         identifier = "../../EbbPlus.storekit">
       </StoreKitConfigurationFileReference>
    </TestAction>
    <LaunchAction
